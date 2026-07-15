@@ -1,0 +1,100 @@
+﻿:root {
+    --primary: #0F172A;
+    --secondary: #1E293B;
+    --gold: #D4AF37;
+    --background: #F8FAFC;
+    --text: #1F2937;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    margin: 0;
+    font-family: Poppins,sans-serif;
+    background: var(--background);
+    color: var(--text);
+}
+
+/* ---------- NAVBAR ---------- */
+
+.navbar {
+    background: var(--primary);
+}
+
+.navbar-brand {
+    font-size: 1.7rem;
+    font-weight: 700;
+}
+
+.gold {
+    color: var(--gold);
+}
+
+.nav-link {
+    color: white !important;
+    transition: .2s;
+}
+
+    .nav-link:hover {
+        color: var(--gold) !important;
+    }
+
+/* ---------- MAIN ---------- */
+
+main {
+    width: 100%;
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+
+/* ---------- FOOTER ---------- */
+
+footer {
+    background: var(--primary);
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+}
+
+/* ---------- BOTÕES ---------- */
+
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+    .btn-primary:hover {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: black;
+    }
+
+/* ---------- FORMULÁRIOS ---------- */
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+
+/* ---------- CARDS ---------- */
+
+.card {
+    border: none;
+    border-radius: 15px;
+    transition: .2s;
+}
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,.12);
+    }
+
+.card-title {
+    color: var(--primary);
+    font-weight: 600;
+}

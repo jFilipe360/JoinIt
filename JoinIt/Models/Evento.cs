@@ -1,4 +1,5 @@
 ﻿using JoinIt.Enums;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace JoinIt.Models
@@ -53,16 +54,20 @@ namespace JoinIt.Models
         [Required]
         [Display(Name = "Criador do Evento")]
         public string CriadorId { get; set; } = string.Empty;
+        [ValidateNever]
         public ApplicationUser Criador { get; set; } = null!;
 
         // Foreign key para a categoria do evento
         [Required]
         [Display(Name = "Categoria")]
         public int CategoriaId { get; set; }
+        [ValidateNever]
         public Categoria Categoria { get; set; } = null!;
 
+        [ValidateNever]
         public ICollection<Participante> Participantes { get; set; } = new List<Participante>();
 
+        [ValidateNever]
         public ICollection<Mensagem> Mensagens { get; set; } = new List<Mensagem>();
     }
 }

@@ -1,0 +1,125 @@
+@model JoinIt.Models.Evento
+
+@{
+    ViewData["Title"] = "Detalhes";
+
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    bool souCriador = Model.CriadorId == userId;
+
+    bool jaParticipo = Model.Participantes.Any(p => p.UserId == userId);
+
+    bool eventoCheio = Model.Participantes.Count >= Model.NumMaxParticipantes;
+}
+
+<h1>Detalhes</h1>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2>@Model.Titulo</h2>
+
+        <p class="text-muted">
+            @Model.DataHora.ToString("dd/MM/yyyy HH:mm")
+        </p>
+
+        <span class="badge bg-warning text-dark">
+            @Model.Categoria.Nome
+        </span>
+        <hr />
+
+        <h5>Descrição</h5>
+        <p>@Model.Descricao</p>
+        <hr />
+
+        <h5>Participantes</h5>
+        <p>
+            @Model.Participantes.Count /
+            @Model.NumMaxParticipantes
+        </p>
+
+        <hr />
+
+        <h4>Participantes</h4>
+
+        @if (Model.Participantes.Any())
+        {
+            <ul class="list-group">
+                @foreach (var participante in Model.Participantes)
+                {
+                    <li class="list-group-item">
+                        @if (participante.IsOrganizador)
+                        {
+                            @participante.User.UserName
+
+                            <span class="badge bg-warning text-dark">
+                                Organizador
+                            </span>
+                        }
+                        else
+                        {
+                            @participante.User.UserName
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Ainda não existem participantes.</p>
+        }
+
+        @if (!souCriador)
+        {
+            if (jaParticipo)
+            {
+                <form asp-action="Sair"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-danger">
+                        Sair do evento
+                    </button>
+                </form>
+            }
+            else if (eventoCheio)
+            {
+                <button class="btn btn-secondary" disabled>
+                    Evento cheio
+                </button>
+            }
+            else
+            {
+                <form asp-action="Participar"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-primary">
+                        Participar
+                    </button>
+                </form>
+            }
+        }
+    </div>
+</div>
+<div>
+    @if (souCriador)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            Editar
+        </a>
+
+        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+            Apagar
+        </a>
+    }
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Voltar
+    </a>
+</div>

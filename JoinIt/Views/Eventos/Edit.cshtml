@@ -1,0 +1,94 @@
+@model JoinIt.Models.Evento
+
+@{
+    ViewData["Title"] = "Editar Evento";
+}
+
+<h1>Editar Evento</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <form asp-action="Edit">
+
+            <input type="hidden" asp-for="Id" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Titulo" class="form-label"></label>
+                <input asp-for="Titulo" class="form-control" />
+                <span asp-validation-for="Titulo" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Descricao" class="form-label"></label>
+                <textarea asp-for="Descricao"
+                          class="form-control"
+                          rows="5"></textarea>
+                <span asp-validation-for="Descricao" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="DataHora" class="form-label"></label>
+                <input asp-for="DataHora"
+                       type="datetime-local"
+                       class="form-control" />
+                <span asp-validation-for="DataHora" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Latitude" class="form-label"></label>
+                <input asp-for="Latitude" class="form-control" />
+                <span asp-validation-for="Latitude" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Longitude" class="form-label"></label>
+                <input asp-for="Longitude" class="form-control" />
+                <span asp-validation-for="Longitude" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="IsPrivado" class="form-check-input" />
+                <label asp-for="IsPrivado" class="form-check-label"></label>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="NumMaxParticipantes" class="form-label"></label>
+                <input asp-for="NumMaxParticipantes" class="form-control" />
+                <span asp-validation-for="NumMaxParticipantes" class="text-danger"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="CategoriaId" class="form-label"></label>
+
+                <select asp-for="CategoriaId"
+                        asp-items="ViewBag.CategoriaId"
+                        class="form-select">
+                    <option value="">Escolha uma categoria</option>
+                </select>
+
+                <span asp-validation-for="CategoriaId" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Guardar Alterações
+            </button>
+
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="btn btn-secondary">
+                Cancelar
+            </a>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
