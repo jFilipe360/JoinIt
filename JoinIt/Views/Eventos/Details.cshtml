@@ -13,6 +13,8 @@
     bool jaParticipo = Model.Participantes.Any(p => p.UserId == userId);
 
     bool eventoCheio = Model.Participantes.Count >= Model.NumMaxParticipantes;
+
+    bool podeUsarChat = ViewBag.PodeUsarChat == true;
 }
 
 <h1>Detalhes</h1>
@@ -197,6 +199,86 @@
             }
         }
 
+        @if (podeUsarChat)
+        {
+            <hr />
+
+            <section class="mt-4">
+                <h4>Chat do evento</h4>
+
+                <p class="text-muted">
+                    Comunica em tempo real com os participantes.
+                </p>
+
+                <div id="chat-mensagens"
+                     class="border rounded p-3 mb-3 bg-light"
+                     style="height: 350px; overflow-y: auto;">
+
+                    @if (!Model.Mensagens.Any())
+                    {
+                        <p id="chat-vazio"
+                           class="text-muted text-center my-5">
+                            Ainda não existem mensagens.
+                        </p>
+                    }
+                    else
+                    {
+                        @foreach (var mensagem in Model.Mensagens
+                                        .OrderBy(m => m.DataEnvio))
+                        {
+                            var nomeAutor =
+                            !string.IsNullOrWhiteSpace(mensagem.User?.Nome)
+                            ? mensagem.User.Nome
+                            : mensagem.User?.UserName ?? "Utilizador";
+
+                            <div class="chat-mensagem mb-3">
+                                <div class="d-flex justify-content-between gap-3">
+                                    <strong>@nomeAutor</strong>
+
+                                    <small class="text-muted">
+                                        @mensagem.DataEnvio.ToString("dd/MM HH:mm")
+                                    </small>
+                                </div>
+
+                                <div class="mt-1">
+                                    @mensagem.Texto
+                                </div>
+                            </div>
+                        }
+                    }
+
+                </div>
+
+                <div id="chat-erro"
+                     class="alert alert-danger d-none">
+                </div>
+
+                <form id="chat-form">
+                    <div class="input-group">
+
+                        <input id="chat-texto"
+                               type="text"
+                               maxlength="500"
+                               class="form-control"
+                               placeholder="Escreve uma mensagem..."
+                               autocomplete="off" />
+
+                        <button id="chat-enviar"
+                                type="submit"
+                                class="btn btn-primary"
+                                disabled>
+                            Enviar
+                        </button>
+
+                    </div>
+
+                    <div class="form-text">
+                        Máximo de 500 caracteres.
+                    </div>
+                </form>
+            </section>
+        }
+
         @if (!souCriador)
         {
             if (jaParticipo)
@@ -300,4 +382,209 @@
                 .openPopup();
         });
     </script>
+
+    @if (podeUsarChat)
+    {
+        <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", async function () {
+
+                const eventoId = @Model.Id;
+
+                const mensagensElement =
+                    document.getElementById("chat-mensagens");
+
+                const mensagemVaziaElement =
+                    document.getElementById("chat-vazio");
+
+                const formulario =
+                    document.getElementById("chat-form");
+
+                const textoInput =
+                    document.getElementById("chat-texto");
+
+                const enviarButton =
+                    document.getElementById("chat-enviar");
+
+                const erroElement =
+                    document.getElementById("chat-erro");
+
+                const connection =
+                    new signalR.HubConnectionBuilder()
+                        .withUrl("/chatHub")
+                        .withAutomaticReconnect()
+                        .build();
+
+                function mostrarErro(mensagem) {
+                    erroElement.textContent = mensagem;
+                    erroElement.classList.remove("d-none");
+                }
+
+                function esconderErro() {
+                    erroElement.textContent = "";
+                    erroElement.classList.add("d-none");
+                }
+
+                function adicionarMensagem(mensagem) {
+
+                    if (mensagemVaziaElement !== null) {
+                        mensagemVaziaElement.remove();
+                    }
+
+                    const container =
+                        document.createElement("div");
+
+                    container.classList.add(
+                        "chat-mensagem",
+                        "mb-3"
+                    );
+
+                    const cabecalho =
+                        document.createElement("div");
+
+                    cabecalho.classList.add(
+                        "d-flex",
+                        "justify-content-between",
+                        "gap-3"
+                    );
+
+                    const autor =
+                        document.createElement("strong");
+
+                    autor.textContent =
+                        mensagem.utilizador;
+
+                    const data =
+                        document.createElement("small");
+
+                    data.classList.add("text-muted");
+                    data.textContent = mensagem.dataEnvio;
+
+                    const texto =
+                        document.createElement("div");
+
+                    texto.classList.add("mt-1");
+                    texto.textContent = mensagem.texto;
+
+                    cabecalho.appendChild(autor);
+                    cabecalho.appendChild(data);
+
+                    container.appendChild(cabecalho);
+                    container.appendChild(texto);
+
+                    mensagensElement.appendChild(container);
+
+                    mensagensElement.scrollTop =
+                        mensagensElement.scrollHeight;
+                }
+
+                connection.on(
+                    "ReceberMensagem",
+                    function (mensagem) {
+                        adicionarMensagem(mensagem);
+                    }
+                );
+
+                connection.onreconnecting(function () {
+                    enviarButton.disabled = true;
+                    mostrarErro(
+                        "Ligação perdida. A tentar restabelecer..."
+                    );
+                });
+
+                connection.onreconnected(async function () {
+                    try {
+                        await connection.invoke(
+                            "EntrarNoEvento",
+                            eventoId
+                        );
+
+                        enviarButton.disabled = false;
+                        esconderErro();
+                    }
+                    catch (erro) {
+                        mostrarErro(
+                            erro.message ||
+                            "Não foi possível voltar a entrar no chat."
+                        );
+                    }
+                });
+
+                connection.onclose(function () {
+                    enviarButton.disabled = true;
+                    mostrarErro(
+                        "A ligação ao chat foi terminada."
+                    );
+                });
+
+                formulario.addEventListener(
+                    "submit",
+                    async function (evento) {
+
+                        evento.preventDefault();
+                        esconderErro();
+
+                        const texto =
+                            textoInput.value.trim();
+
+                        if (texto === "") {
+                            mostrarErro(
+                                "Escreve uma mensagem."
+                            );
+
+                            return;
+                        }
+
+                        enviarButton.disabled = true;
+
+                        try {
+                            await connection.invoke(
+                                "EnviarMensagem",
+                                eventoId,
+                                texto
+                            );
+
+                            textoInput.value = "";
+                            textoInput.focus();
+                        }
+                        catch (erro) {
+                            mostrarErro(
+                                erro.message ||
+                                "Não foi possível enviar a mensagem."
+                            );
+                        }
+                        finally {
+                            if (connection.state ===
+                                signalR.HubConnectionState.Connected) {
+
+                                enviarButton.disabled = false;
+                            }
+                        }
+                    }
+                );
+
+                try {
+                    await connection.start();
+
+                    await connection.invoke(
+                        "EntrarNoEvento",
+                        eventoId
+                    );
+
+                    enviarButton.disabled = false;
+                    esconderErro();
+
+                    mensagensElement.scrollTop =
+                        mensagensElement.scrollHeight;
+                }
+                catch (erro) {
+                    mostrarErro(
+                        erro.message ||
+                        "Não foi possível ligar ao chat."
+                    );
+                }
+            });
+        </script>
+    }
 }

@@ -65,6 +65,8 @@ namespace JoinIt.Controllers
                     .ThenInclude(p => p.User)
                 .Include(e => e.Convites)
                     .ThenInclude(c => c.Utilizador)
+                .Include(e => e.Mensagens)
+                    .ThenInclude(m => m.User)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (evento == null)
@@ -132,6 +134,10 @@ namespace JoinIt.Controllers
 
                 ViewBag.AmigosDisponiveis = amigosDisponiveis;
             }
+
+            ViewBag.PodeUsarChat =
+                evento.CriadorId == userId ||
+                evento.Participantes.Any(p => p.UserId == userId);
 
             return View(evento);
         }
