@@ -1,3 +1,4 @@
+@using System.Globalization
 @model JoinIt.Models.Evento
 
 @{
@@ -32,6 +33,13 @@
         <h5>Descrição</h5>
         <p>@Model.Descricao</p>
         <hr />
+
+        <div id="map"
+             class="event-map"
+             data-latitude="@Model.Latitude.ToString(CultureInfo.InvariantCulture)"
+             data-longitude="@Model.Longitude.ToString(CultureInfo.InvariantCulture)"
+             data-titulo="@Model.Titulo">
+        </div>
 
         <h5>Participantes</h5>
         <p>
@@ -123,3 +131,54 @@
         Voltar
     </a>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const mapElement = document.getElementById("map");
+
+            const latitude = Number.parseFloat(
+                mapElement.dataset.latitude
+            );
+
+            const longitude = Number.parseFloat(
+                mapElement.dataset.longitude
+            );
+
+            const titulo = mapElement.dataset.titulo;
+
+            if (!Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)) {
+
+                mapElement.innerHTML =
+                    '<div class="alert alert-warning">' +
+                    'Localização indisponível.' +
+                    '</div>';
+
+                return;
+            }
+
+            const map = L.map("map", {
+                scrollWheelZoom: false
+            }).setView(
+                [latitude, longitude],
+                15
+            );
+
+            L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 19,
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }
+            ).addTo(map);
+
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup(titulo)
+                .openPopup();
+        });
+    </script>
+}

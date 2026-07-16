@@ -26,10 +26,20 @@ namespace JoinIt.Controllers
         // GET: EVENTOS
         public async Task<IActionResult> Index()
         {
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+                return Challenge();
+
             var eventos = await _context.Eventos
+                .AsNoTracking()
                 .Include(e => e.Categoria)
                 .Include(e => e.Criador)
                 .Include(e => e.Participantes)
+                .Where(e =>
+                    !e.IsPrivado ||
+                    e.CriadorId == userId ||
+                    e.Participantes.Any(p => p.UserId == userId))
                 .OrderBy(e => e.DataHora)
                 .ToListAsync();
 
@@ -45,14 +55,28 @@ namespace JoinIt.Controllers
             }
 
             var evento = await _context.Eventos
+                .AsNoTracking()
                 .Include(e => e.Categoria)
                 .Include(e => e.Criador)
                 .Include(e => e.Participantes)
-                .ThenInclude(p => p.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (evento == null)
+                    .ThenInclude(p => p.User)
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (evento == null) return NotFound();
+
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+                return Challenge();
+
+            if (evento.IsPrivado)
             {
-                return NotFound();
+                var temAcesso =
+                    evento.CriadorId == userId ||
+                    evento.Participantes.Any(p => p.UserId == userId);
+
+                if (!temAcesso)
+                    return Forbid();
             }
 
             return View(evento);
@@ -73,6 +97,14 @@ namespace JoinIt.Controllers
         public async Task<IActionResult> Create([Bind("Titulo,Descricao,DataHora,Latitude,Longitude,IsPrivado,NumMaxParticipantes,CategoriaId")] Evento evento)
         {
             ModelState.Remove(nameof(Evento.CriadorId));
+
+            if (evento.Latitude == 0 && evento.Longitude == 0)
+            {
+                ModelState.AddModelError(
+                    nameof(Evento.Latitude),
+                    "Seleciona uma localização no mapa."
+                );
+            }
 
             if (!ModelState.IsValid)
             {
@@ -137,55 +169,84 @@ namespace JoinIt.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int? id, [Bind("Id,Titulo,Descricao,DataHora,Latitude,Longitude,IsPrivado,NumMaxParticipantes,CategoriaId")] Evento evento)
+        public async Task<IActionResult> Edit(int? id,[Bind("Id,Titulo,Descricao,DataHora,Latitude,Longitude,IsPrivado,NumMaxParticipantes,CategoriaId")]Evento evento)
         {
-            ModelState.Remove(nameof(Evento.CriadorId));
-
-            if (id != evento.Id)
+            if (id == null || id != evento.Id)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            var eventoOriginal = await _context.Eventos
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (eventoOriginal == null)
             {
-                try
-                {
-                    var eventoOriginal = await _context.Eventos.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
-
-                    if (eventoOriginal == null)
-                    {
-                        return NotFound();
-                    }
-
-
-                    var userId = _userManager.GetUserId(User);
-
-                    if (userId == null)
-                        return Challenge();
-
-                    if (eventoOriginal.CriadorId != userId)
-                        return Forbid();
-
-                    evento.CriadorId = eventoOriginal.CriadorId;
-                    evento.Estado = eventoOriginal.Estado;
-
-                    _context.Update(evento);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!EventoExists(evento.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
-            return View(evento);
+
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            if (eventoOriginal.CriadorId != userId)
+            {
+                return Forbid();
+            }
+
+            ModelState.Remove(nameof(Evento.CriadorId));
+
+            if (evento.Latitude == 0 && evento.Longitude == 0)
+            {
+                ModelState.AddModelError(
+                    nameof(Evento.Latitude),
+                    "Seleciona uma localização no mapa."
+                );
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewData["CategoriaId"] = new SelectList(
+                    await _context.Categorias
+                        .OrderBy(c => c.Nome)
+                        .ToListAsync(),
+                    "Id",
+                    "Nome",
+                    evento.CategoriaId
+                );
+
+                return View(evento);
+            }
+
+            eventoOriginal.Titulo = evento.Titulo;
+            eventoOriginal.Descricao = evento.Descricao;
+            eventoOriginal.DataHora = evento.DataHora;
+            eventoOriginal.Latitude = evento.Latitude;
+            eventoOriginal.Longitude = evento.Longitude;
+            eventoOriginal.IsPrivado = evento.IsPrivado;
+            eventoOriginal.NumMaxParticipantes = evento.NumMaxParticipantes;
+            eventoOriginal.CategoriaId = evento.CategoriaId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!EventoExists(evento.Id))
+                {
+                    return NotFound();
+                }
+
+                throw;
+            }
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = evento.Id }
+            );
         }
 
         // GET: EVENTOS/Delete/5
@@ -314,6 +375,24 @@ namespace JoinIt.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Details), new { id });
+        }
+
+        public async Task<IActionResult> Mapa()
+        {
+            var eventos = await _context.Eventos
+                .AsNoTracking()
+                .Include(e => e.Categoria)
+                .Where(e => !e.IsPrivado)
+                .Where(e =>
+                    e.Latitude >= -90 &&
+                    e.Latitude <= 90 &&
+                    e.Longitude >= -180 &&
+                    e.Longitude <= 180)
+                .Where(e => e.Latitude != 0 || e.Longitude != 0)
+                .OrderBy(e => e.DataHora)
+                .ToListAsync();
+
+            return View(eventos);
         }
     }
 }
