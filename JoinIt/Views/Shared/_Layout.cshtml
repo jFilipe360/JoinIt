@@ -44,13 +44,35 @@
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Amigos</a>
+                            <a class="nav-link" asp-controller="Amizades" asp-action="Index">Amigos</a>
                         </li>
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Perfis" asp-action="MeuPerfil">Meu perfil</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Perfis"
+                                   asp-action="Index">
+                                    Utilizadores
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Convites"
+                                   asp-action="Index">
+                                    Convites
+                                </a>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link" href="#">Sobre</a>
                         </li>
-
                     </ul>
 
                     <partial name="_LoginPartial" />

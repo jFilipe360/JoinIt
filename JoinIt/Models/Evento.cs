@@ -69,5 +69,8 @@ namespace JoinIt.Models
 
         [ValidateNever]
         public ICollection<Mensagem> Mensagens { get; set; } = new List<Mensagem>();
+
+        [ValidateNever]
+        public ICollection<ConviteEvento> Convites { get; set; } = new List<ConviteEvento>();
     }
 }

@@ -39,7 +39,10 @@ namespace JoinIt.Controllers
                 .Where(e =>
                     !e.IsPrivado ||
                     e.CriadorId == userId ||
-                    e.Participantes.Any(p => p.UserId == userId))
+                    e.Participantes.Any(p => p.UserId == userId) ||
+                    e.Convites.Any(c =>
+                        c.UtilizadorId == userId &&
+                        c.Estado != EstadoConvite.Rejeitado))
                 .OrderBy(e => e.DataHora)
                 .ToListAsync();
 
@@ -60,23 +63,74 @@ namespace JoinIt.Controllers
                 .Include(e => e.Criador)
                 .Include(e => e.Participantes)
                     .ThenInclude(p => p.User)
+                .Include(e => e.Convites)
+                    .ThenInclude(c => c.Utilizador)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
-            if (evento == null) return NotFound();
+            if (evento == null)
+            {
+                return NotFound();
+            }
 
             var userId = _userManager.GetUserId(User);
 
             if (userId == null)
+            {
                 return Challenge();
+            }
 
             if (evento.IsPrivado)
             {
                 var temAcesso =
                     evento.CriadorId == userId ||
-                    evento.Participantes.Any(p => p.UserId == userId);
+                    evento.Participantes.Any(p => p.UserId == userId) ||
+                    evento.Convites.Any(c =>
+                        c.UtilizadorId == userId &&
+                        (c.Estado == EstadoConvite.Pendente ||
+                         c.Estado == EstadoConvite.Aceite));
 
                 if (!temAcesso)
+                {
                     return Forbid();
+                }
+            }
+
+            if (evento.IsPrivado && evento.CriadorId == userId)
+            {
+                var amizadesAceites = await _context.Amizades
+                    .AsNoTracking()
+                    .Where(a =>
+                        a.Estado == EstadoAmizade.Aceite &&
+                        (a.PedidoPorId == userId ||
+                         a.PedidoAId == userId))
+                    .ToListAsync();
+
+                var idsAmigos = amizadesAceites
+                    .Select(a =>
+                        a.PedidoPorId == userId
+                            ? a.PedidoAId
+                            : a.PedidoPorId)
+                    .ToList();
+
+                var idsParticipantes = evento.Participantes
+                    .Select(p => p.UserId)
+                    .ToList();
+
+                var idsComConviteAtivo = evento.Convites
+                    .Where(c => c.Estado != EstadoConvite.Rejeitado)
+                    .Select(c => c.UtilizadorId)
+                    .ToList();
+
+                var amigosDisponiveis = await _context.Users
+                    .AsNoTracking()
+                    .Where(u =>
+                        idsAmigos.Contains(u.Id) &&
+                        !idsParticipantes.Contains(u.Id) &&
+                        !idsComConviteAtivo.Contains(u.Id))
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                ViewBag.AmigosDisponiveis = amigosDisponiveis;
             }
 
             return View(evento);
@@ -320,6 +374,20 @@ namespace JoinIt.Controllers
             if (evento == null)
                 return NotFound();
 
+            if (evento.IsPrivado)
+            {
+                var temConviteAceite = await _context.ConvitesEventos
+                    .AnyAsync(c =>
+                        c.EventoId == evento.Id &&
+                        c.UtilizadorId == userId &&
+                        c.Estado == EstadoConvite.Aceite);
+
+                if (!temConviteAceite)
+                {
+                    return Forbid();
+                }
+            }
+
             // O criador não pode inscrever-se
             if (evento.CriadorId == userId)
                 return RedirectToAction(nameof(Details), new { id });
@@ -375,6 +443,115 @@ namespace JoinIt.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Details), new { id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Convidar(
+    int id,
+    string utilizadorId)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(utilizadorId))
+            {
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
+
+            var evento = await _context.Eventos
+                .Include(e => e.Participantes)
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (evento == null)
+            {
+                return NotFound();
+            }
+
+            if (evento.CriadorId != userId)
+            {
+                return Forbid();
+            }
+
+            if (!evento.IsPrivado)
+            {
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
+
+            if (utilizadorId == userId)
+            {
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
+
+            var saoAmigos = await _context.Amizades
+                .AnyAsync(a =>
+                    a.Estado == EstadoAmizade.Aceite &&
+                    (
+                        (a.PedidoPorId == userId &&
+                         a.PedidoAId == utilizadorId)
+                        ||
+                        (a.PedidoPorId == utilizadorId &&
+                         a.PedidoAId == userId)
+                    ));
+
+            if (!saoAmigos)
+            {
+                return Forbid();
+            }
+
+            var jaParticipa = evento.Participantes
+                .Any(p => p.UserId == utilizadorId);
+
+            if (jaParticipa)
+            {
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
+
+            var conviteExistente = await _context.ConvitesEventos
+                .FirstOrDefaultAsync(c =>
+                    c.EventoId == id &&
+                    c.UtilizadorId == utilizadorId);
+
+            if (conviteExistente == null)
+            {
+                var convite = new ConviteEvento
+                {
+                    EventoId = id,
+                    UtilizadorId = utilizadorId,
+                    Estado = EstadoConvite.Pendente,
+                    DataConvite = DateTime.Now
+                };
+
+                _context.ConvitesEventos.Add(convite);
+            }
+            else if (conviteExistente.Estado == EstadoConvite.Rejeitado)
+            {
+                conviteExistente.Estado = EstadoConvite.Pendente;
+                conviteExistente.DataConvite = DateTime.Now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id }
+            );
         }
 
         public async Task<IActionResult> Mapa()

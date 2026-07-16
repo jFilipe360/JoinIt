@@ -1,0 +1,132 @@
+﻿@model IEnumerable<JoinIt.Models.ApplicationUser>
+
+@{
+    ViewData["Title"] = "Utilizadores";
+
+    var pesquisa = ViewData["Pesquisa"] as string;
+}
+
+<div class="mb-4">
+    <h1 class="mb-1">Encontrar utilizadores</h1>
+
+    <p class="text-muted mb-0">
+        Procura outras pessoas e consulta os seus perfis.
+    </p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-action="Index"
+              method="get"
+              class="row g-2">
+
+            <div class="col-12 col-md">
+
+                <input type="search"
+                       name="pesquisa"
+                       value="@pesquisa"
+                       class="form-control"
+                       placeholder="Pesquisar por nome ou username..." />
+
+            </div>
+
+            <div class="col-12 col-md-auto">
+
+                <button type="submit"
+                        class="btn btn-primary w-100">
+                    Pesquisar
+                </button>
+
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(pesquisa))
+            {
+                <div class="col-12 col-md-auto">
+
+                    <a asp-action="Index"
+                       class="btn btn-secondary w-100">
+                        Limpar
+                    </a>
+
+                </div>
+            }
+
+        </form>
+
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Não foram encontrados utilizadores.
+    </div>
+}
+else
+{
+    <div class="row g-4">
+
+        @foreach (var utilizador in Model)
+        {
+            var inicial = !string.IsNullOrWhiteSpace(utilizador.Nome)
+            ? utilizador.Nome.Substring(0, 1).ToUpper()
+            : "?";
+
+            <div class="col-12 col-md-6 col-lg-4">
+
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+
+                        <div class="d-flex align-items-center gap-3">
+
+                            @if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil))
+                            {
+                                <img src="@utilizador.FotoPerfil"
+                                     alt="Fotografia de @utilizador.Nome"
+                                     class="rounded-circle border"
+                                     style="width: 75px;
+                                                        height: 75px;
+                                                        object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle bg-dark text-warning
+                                                        d-flex justify-content-center
+                                                        align-items-center flex-shrink-0"
+                                     style="width: 75px;
+                                                        height: 75px;
+                                                        font-size: 1.8rem;
+                                                        font-weight: 600;">
+                                    @inicial
+                                </div>
+                            }
+
+                            <div class="flex-grow-1">
+
+                                <h2 class="h5 mb-1">
+                                    @utilizador.Nome
+                                </h2>
+
+                                <p class="text-muted mb-3">
+                                    @utilizador.UserName
+                                </p>
+
+                                <a asp-action="Details"
+                                   asp-route-id="@utilizador.Id"
+                                   class="btn btn-primary btn-sm">
+                                    Ver perfil
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        }
+
+    </div>
+}

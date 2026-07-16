@@ -1,0 +1,207 @@
+﻿@model JoinIt.Models.ApplicationUser
+
+@{
+    ViewData["Title"] = "Editar Perfil";
+
+    var inicial = !string.IsNullOrWhiteSpace(Model.Nome)
+        ? Model.Nome.Substring(0, 1).ToUpper()
+        : "?";
+}
+
+<div class="mb-4">
+    <h1 class="mb-1">Editar Perfil</h1>
+
+    <p class="text-muted mb-0">
+        Atualiza os teus dados pessoais.
+    </p>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <div class="row g-4">
+
+            <div class="col-12 col-md-4 text-center">
+
+                @if (!string.IsNullOrWhiteSpace(Model.FotoPerfil))
+                {
+                    <img id="foto-preview"
+                         src="@Model.FotoPerfil"
+                         alt="Fotografia de perfil"
+                         class="rounded-circle border"
+                         style="width: 160px;
+                                    height: 160px;
+                                    object-fit: cover;" />
+
+                    <div id="foto-inicial"
+                         class="rounded-circle bg-dark text-warning
+                                    justify-content-center align-items-center mx-auto"
+                         style="width: 160px;
+                                    height: 160px;
+                                    font-size: 3.5rem;
+                                    font-weight: 600;
+                                    display: none;">
+                        @inicial
+                    </div>
+                }
+                else
+                {
+                    <img id="foto-preview"
+                         src=""
+                         alt="Fotografia de perfil"
+                         class="rounded-circle border"
+                         style="width: 160px;
+                                    height: 160px;
+                                    object-fit: cover;
+                                    display: none;" />
+
+                    <div id="foto-inicial"
+                         class="rounded-circle bg-dark text-warning
+                                    d-flex justify-content-center
+                                    align-items-center mx-auto"
+                         style="width: 160px;
+                                    height: 160px;
+                                    font-size: 3.5rem;
+                                    font-weight: 600;">
+                        @inicial
+                    </div>
+                }
+
+            </div>
+
+            <div class="col-12 col-md-8">
+
+                <form asp-action="Edit" method="post">
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="text-danger mb-3">
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Nome" class="form-label">
+                            Nome
+                        </label>
+
+                        <input asp-for="Nome"
+                               class="form-control"
+                               maxlength="100"
+                               placeholder="O teu nome" />
+
+                        <span asp-validation-for="Nome"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Nome de utilizador
+                        </label>
+
+                        <input value="@Model.UserName"
+                               class="form-control"
+                               disabled />
+
+                        <div class="form-text">
+                            O nome de utilizador não pode ser alterado aqui.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Email
+                        </label>
+
+                        <input value="@Model.Email"
+                               class="form-control"
+                               disabled />
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="FotoPerfil"
+                               class="form-label">
+                            URL da fotografia
+                        </label>
+
+                        <input asp-for="FotoPerfil"
+                               type="url"
+                               class="form-control"
+                               placeholder="https://exemplo.com/foto.jpg" />
+
+                        <span asp-validation-for="FotoPerfil"
+                              class="text-danger">
+                        </span>
+
+                        <div class="form-text">
+                            Introduz o endereço completo de uma imagem.
+                            Deixa vazio para remover a fotografia.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            Guardar alterações
+                        </button>
+
+                        <a asp-action="MeuPerfil"
+                           class="btn btn-secondary">
+                            Cancelar
+                        </a>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const fotoInput =
+                document.getElementById("FotoPerfil");
+
+            const fotoPreview =
+                document.getElementById("foto-preview");
+
+            const fotoInicial =
+                document.getElementById("foto-inicial");
+
+            fotoInput.addEventListener("input", function () {
+
+                const url = fotoInput.value.trim();
+
+                if (url === "") {
+                    fotoPreview.style.display = "none";
+                    fotoInicial.style.display = "flex";
+                    return;
+                }
+
+                fotoPreview.src = url;
+                fotoPreview.style.display = "block";
+                fotoInicial.style.display = "none";
+            });
+
+            fotoPreview.addEventListener("error", function () {
+                fotoPreview.style.display = "none";
+                fotoInicial.style.display = "flex";
+            });
+
+            fotoPreview.addEventListener("load", function () {
+                fotoPreview.style.display = "block";
+                fotoInicial.style.display = "none";
+            });
+
+        });
+    </script>
+}

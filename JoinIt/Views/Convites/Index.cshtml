@@ -1,0 +1,260 @@
+﻿@model IEnumerable<JoinIt.Models.ConviteEvento>
+
+@{
+    ViewData["Title"] = "Convites";
+
+    var pendentes = Model
+        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Pendente)
+        .ToList();
+
+    var aceites = Model
+        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Aceite)
+        .ToList();
+
+    var rejeitados = Model
+        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Rejeitado)
+        .ToList();
+}
+
+<div class="mb-4">
+    <h1 class="mb-1">Convites para eventos</h1>
+
+    <p class="text-muted mb-0">
+        Consulta e gere os convites que recebeste.
+    </p>
+</div>
+
+@if (TempData["Erro"] is string erro)
+{
+    <div class="alert alert-danger">
+        @erro
+    </div>
+}
+
+@if (TempData["Sucesso"] is string sucesso)
+{
+    <div class="alert alert-success">
+        @sucesso
+    </div>
+}
+
+<section class="mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Convites pendentes</h2>
+
+        <span class="badge bg-warning text-dark">
+            @pendentes.Count
+        </span>
+    </div>
+
+    @if (!pendentes.Any())
+    {
+        <div class="alert alert-light border">
+            Não tens convites pendentes.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+
+            @foreach (var convite in pendentes)
+            {
+                var evento = convite.Evento;
+                var eventoCheio =
+                evento.Participantes.Count >=
+                evento.NumMaxParticipantes;
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+
+                        <div class="card-body d-flex flex-column">
+
+                            <div class="d-flex justify-content-between mb-2">
+
+                                <span class="badge bg-warning text-dark">
+                                    @(evento.Categoria?.Nome
+                                                                ?? "Sem categoria")
+                        </span>
+
+                                <span class="badge bg-danger">
+                                    Privado
+                                </span>
+
+                            </div>
+
+                            <h3 class="h5">
+                                @evento.Titulo
+                            </h3>
+
+                            <p class="text-muted mb-2">
+                                @evento.DataHora.ToString(
+                                                "dd/MM/yyyy HH:mm"
+                                                )
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Criado por:</strong>
+                        @(evento.Criador?.Nome
+                                                ?? evento.Criador?.UserName)
+                    </p>
+
+                            <p>
+                                <strong>Participantes:</strong>
+                                @evento.Participantes.Count /
+                                @evento.NumMaxParticipantes
+                            </p>
+
+                            <div class="d-flex gap-2 flex-wrap mt-auto">
+
+                                <a asp-controller="Eventos"
+                                   asp-action="Details"
+                                   asp-route-id="@evento.Id"
+                                   class="btn btn-outline-primary btn-sm">
+                                    Ver evento
+                                </a>
+
+                        @if (eventoCheio)
+                                {
+                                    <button class="btn btn-secondary btn-sm"
+                                            disabled>
+                                        Evento cheio
+                                    </button>
+                                }
+                                else
+                                {
+                                    <form asp-action="Aceitar"
+                                          asp-route-id="@convite.Id"
+                                          method="post">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm">
+                                            Aceitar
+                                        </button>
+                                    </form>
+                                }
+
+                                <form asp-action="Rejeitar"
+                                      asp-route-id="@convite.Id"
+                                      method="post">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <button type="submit"
+                                            class="btn btn-danger btn-sm">
+                                        Rejeitar
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+</section>
+
+<section class="mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Convites aceites</h2>
+
+        <span class="badge bg-success">
+            @aceites.Count
+        </span>
+    </div>
+
+    @if (!aceites.Any())
+    {
+        <div class="alert alert-light border">
+            Ainda não aceitaste convites.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+
+            @foreach (var convite in aceites)
+            {
+                <a asp-controller="Eventos"
+                   asp-action="Details"
+                   asp-route-id="@convite.EventoId"
+                   class="list-group-item list-group-item-action
+                                  d-flex justify-content-between
+                                  align-items-center">
+
+                    <div>
+                        <strong>@convite.Evento.Titulo</strong>
+
+                        <div class="text-muted small">
+                            @convite.Evento.DataHora.ToString(
+                            "dd/MM/yyyy HH:mm"
+                                        )
+                </div>
+            </div>
+
+            <span class="badge bg-success">
+                Aceite
+            </span>
+
+        </a>
+                }
+
+        </div>
+    }
+
+</section>
+
+<section>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Convites rejeitados</h2>
+
+        <span class="badge bg-secondary">
+            @rejeitados.Count
+        </span>
+    </div>
+
+    @if (!rejeitados.Any())
+    {
+        <div class="alert alert-light border">
+            Não tens convites rejeitados.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+
+            @foreach (var convite in rejeitados)
+            {
+                <div class="list-group-item
+                                    d-flex justify-content-between
+                                    align-items-center">
+
+                    <div>
+                        <strong>@convite.Evento.Titulo</strong>
+
+                        <div class="text-muted small">
+                            @convite.DataConvite.ToString(
+                            "dd/MM/yyyy HH:mm"
+                                        )
+                </div>
+            </div>
+
+            <span class="badge bg-secondary">
+                Rejeitado
+            </span>
+
+        </div>
+                }
+
+        </div>
+    }
+
+</section>

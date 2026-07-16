@@ -21,6 +21,8 @@ namespace JoinIt.Data
 
         public DbSet<Amizade> Amizades { get; set; }
 
+        public DbSet<ConviteEvento> ConvitesEventos { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -68,6 +70,26 @@ namespace JoinIt.Data
                 .WithMany(u => u.PedidosRecebidos)
                 .HasForeignKey(a => a.PedidoAId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ConviteEvento>()
+                .HasOne(c => c.Evento)
+                .WithMany(e => e.Convites)
+                .HasForeignKey(c => c.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ConviteEvento>()
+                .HasOne(c => c.Utilizador)
+                .WithMany(u => u.ConvitesRecebidos)
+                .HasForeignKey(c => c.UtilizadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ConviteEvento>()
+                .HasIndex(c => new
+                {
+                    c.EventoId,
+                    c.UtilizadorId
+                })
+                .IsUnique();
 
         }
     }
