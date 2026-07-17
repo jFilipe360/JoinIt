@@ -76,6 +76,14 @@ namespace JoinIt.Controllers
 
             var evento = convite.Evento;
 
+            if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
+            {
+                TempData["Erro"] =
+                    "Este evento já não aceita participantes.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
             var jaParticipa = evento.Participantes
                 .Any(p => p.UserId == userId);
 

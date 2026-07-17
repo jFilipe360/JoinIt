@@ -15,6 +15,8 @@
     bool eventoCheio = Model.Participantes.Count >= Model.NumMaxParticipantes;
 
     bool podeUsarChat = ViewBag.PodeUsarChat == true;
+
+    bool podeGerirEstado = souCriador || User.IsInRole("Admin");
 }
 
 <h1>Detalhes</h1>
@@ -33,6 +35,33 @@
             @Model.Categoria.Nome
         </span>
         <hr />
+
+        @switch (Model.Estado)
+        {
+            case JoinIt.Enums.EstadoEvento.ParaBreve:
+                <span class="badge bg-primary">
+                    Para breve
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.ADecorrer:
+                <span class="badge bg-success">
+                    A decorrer
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.Terminado:
+                <span class="badge bg-secondary">
+                    Terminado
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.Cancelado:
+                <span class="badge bg-danger">
+                    Cancelado
+                </span>
+                break;
+        }
 
         <h5>Descrição</h5>
         <p>@Model.Descricao</p>
@@ -331,6 +360,76 @@
     <a asp-action="Index" class="btn btn-secondary">
         Voltar
     </a>
+
+    @if (podeGerirEstado)
+    {
+        <div class="d-flex gap-2 flex-wrap mt-3">
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ParaBreve)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.ADecorrer" />
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        Iniciar evento
+                    </button>
+                </form>
+            }
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ADecorrer)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.Terminado" />
+
+                    <button type="submit"
+                            class="btn btn-secondary">
+                        Terminar evento
+                    </button>
+                </form>
+            }
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ParaBreve ||
+                    Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ADecorrer)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post"
+                      onsubmit="return confirm('Tens a certeza de que queres cancelar este evento?');">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.Cancelado" />
+
+                    <button type="submit"
+                            class="btn btn-outline-danger">
+                        Cancelar evento
+                    </button>
+                </form>
+            }
+
+        </div>
+    }
 </div>
 
 @section Scripts {

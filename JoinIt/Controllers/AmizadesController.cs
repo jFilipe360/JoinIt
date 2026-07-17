@@ -116,6 +116,8 @@ namespace JoinIt.Controllers
             _context.Amizades.Add(amizade);
             await _context.SaveChangesAsync();
 
+            TempData["Sucesso"] = "Pedido de amizade enviado.";
+
             return RedirectToAction(
                 "Details",
                 "Perfis",
@@ -178,6 +180,8 @@ namespace JoinIt.Controllers
 
             await _context.SaveChangesAsync();
 
+            TempData["Sucesso"] = "Pedido de amizade aceite.";
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -238,6 +242,8 @@ namespace JoinIt.Controllers
 
             _context.Amizades.Remove(amizade);
             await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = "Amigo removido.";
 
             return RedirectToAction(nameof(Index));
         }

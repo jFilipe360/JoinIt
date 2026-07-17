@@ -70,6 +70,17 @@
                             </li>
                         }
 
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Admin"
+                                   asp-action="Index">
+                                    Administração
+                                </a>
+                            </li>
+                        }
+
                         <li class="nav-item">
                             <a class="nav-link" href="#">Sobre</a>
                         </li>
@@ -84,9 +95,9 @@
     </header>
 
     <main class="container py-4">
+        <partial name="_Mensagens" />
 
         @RenderBody()
-
     </main>
 
     <footer>

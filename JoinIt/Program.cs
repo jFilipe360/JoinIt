@@ -34,6 +34,11 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedUICultures = new[] { cultura };
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Home/AcessoNegado";
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -48,6 +53,11 @@ else
     app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute(
+    "/Home/StatusCode",
+    "?code={0}"
+);
+
 app.UseRequestLocalization();
 
 app.UseHttpsRedirection();
@@ -57,6 +67,8 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "default",

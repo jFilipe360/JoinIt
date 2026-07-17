@@ -1,6 +1,7 @@
-using System.Diagnostics;
 using JoinIt.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace JoinIt.Controllers
 {
@@ -27,6 +28,24 @@ namespace JoinIt.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [AllowAnonymous]
+        public IActionResult StatusCode(int code)
+        {
+            Response.StatusCode = code;
+
+            ViewBag.Codigo = code;
+
+            return View();
+        }
+
+        [AllowAnonymous]
+        public IActionResult AcessoNegado()
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+
+            return View();
         }
     }
 }

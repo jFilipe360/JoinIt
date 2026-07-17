@@ -11,13 +11,13 @@ namespace JoinIt.Models
 
         // Titulo do evento
         [Required(ErrorMessage = "O título é obrigatório.")]
-        [StringLength(100, MinimumLength = 3)]
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "O título não pode exceder 100 caracteres.")]
         [Display(Name = "Título")]
         public string Titulo { get; set; } = string.Empty;
 
         // Descrição do evento
         [Required(ErrorMessage = "A descrição é obrigatória.")]
-        [StringLength(1000)]
+        [StringLength(1000, ErrorMessage = "A descrição não pode exceder 1000 caracteres.")]
         [Display(Name = "Descrição")]
         public string Descricao { get; set; } = string.Empty;
 

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace JoinIt.Controllers
 {
@@ -24,27 +23,97 @@ namespace JoinIt.Controllers
         }
 
         // GET: EVENTOS
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? pesquisa, int? categoriaId, string? tipo, bool apenasFuturos = false, bool participo = false, string ordem = "data")
         {
             var userId = _userManager.GetUserId(User);
 
             if (userId == null)
                 return Challenge();
 
-            var eventos = await _context.Eventos
+            var query = _context.Eventos
                 .AsNoTracking()
                 .Include(e => e.Categoria)
                 .Include(e => e.Criador)
                 .Include(e => e.Participantes)
+                .Include(e => e.Convites)
                 .Where(e =>
                     !e.IsPrivado ||
                     e.CriadorId == userId ||
                     e.Participantes.Any(p => p.UserId == userId) ||
                     e.Convites.Any(c =>
                         c.UtilizadorId == userId &&
-                        c.Estado != EstadoConvite.Rejeitado))
-                .OrderBy(e => e.DataHora)
-                .ToListAsync();
+                        c.Estado != JoinIt.Enums.EstadoConvite.Rejeitado));
+
+            if (!string.IsNullOrWhiteSpace(pesquisa))
+            {
+                pesquisa = pesquisa.Trim();
+
+                query = query.Where(e =>
+                    e.Titulo.Contains(pesquisa));
+            }
+
+            if (categoriaId.HasValue)
+            {
+                query = query.Where(e =>
+                    e.CategoriaId == categoriaId.Value);
+            }
+
+            if (tipo == "publico")
+            {
+                query = query.Where(e => !e.IsPrivado);
+            }
+            else if (tipo == "privado")
+            {
+                query = query.Where(e => e.IsPrivado);
+            }
+
+            if (apenasFuturos)
+            {
+                var agora = DateTime.Now;
+
+                query = query.Where(e =>
+                    e.DataHora >= agora);
+            }
+
+            if (participo)
+            {
+                query = query.Where(e =>
+                    e.Participantes.Any(p =>
+                        p.UserId == userId));
+            }
+
+            query = ordem switch
+            {
+                "data_desc" => query
+                    .OrderByDescending(e => e.DataHora),
+
+                "titulo" => query
+                    .OrderBy(e => e.Titulo),
+
+                "titulo_desc" => query
+                    .OrderByDescending(e => e.Titulo),
+
+                _ => query.OrderBy(e => e.DataHora)
+            };
+
+            var eventos = await query.ToListAsync();
+
+            ViewBag.Categorias = new SelectList(
+                await _context.Categorias
+                    .AsNoTracking()
+                    .OrderBy(c => c.Nome)
+                    .ToListAsync(),
+                "Id",
+                "Nome",
+                categoriaId
+            );
+
+            ViewData["Pesquisa"] = pesquisa;
+            ViewData["CategoriaId"] = categoriaId;
+            ViewData["Tipo"] = tipo;
+            ViewData["ApenasFuturos"] = apenasFuturos;
+            ViewData["Participo"] = participo;
+            ViewData["Ordem"] = ordem;
 
             return View(eventos);
         }
@@ -166,6 +235,22 @@ namespace JoinIt.Controllers
                 );
             }
 
+            if (evento.DataHora <= DateTime.Now)
+            {
+                ModelState.AddModelError(
+                    nameof(Evento.DataHora),
+                    "A data do evento deve ser futura."
+                );
+            }
+
+            if (evento.NumMaxParticipantes < 1)
+            {
+                ModelState.AddModelError(
+                    nameof(Evento.NumMaxParticipantes),
+                    "O evento deve permitir pelo menos um participante."
+                );
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nome", evento.CategoriaId);
@@ -192,6 +277,8 @@ namespace JoinIt.Controllers
             });
 
             await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = "Evento criado com sucesso.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -266,6 +353,16 @@ namespace JoinIt.Controllers
                 );
             }
 
+            var numeroParticipantes = await _context.Participantes.CountAsync(p => p.EventoId == evento.Id);
+
+            if (evento.NumMaxParticipantes < numeroParticipantes)
+            {
+                ModelState.AddModelError(
+                    nameof(Evento.NumMaxParticipantes),
+                    $"O limite não pode ser inferior aos {numeroParticipantes} participantes atuais."
+                );
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewData["CategoriaId"] = new SelectList(
@@ -303,10 +400,9 @@ namespace JoinIt.Controllers
                 throw;
             }
 
-            return RedirectToAction(
-                nameof(Details),
-                new { id = evento.Id }
-            );
+            TempData["Sucesso"] = "Evento atualizado com sucesso.";
+
+            return RedirectToAction(nameof(Details), new { id = evento.Id });
         }
 
         // GET: EVENTOS/Delete/5
@@ -358,6 +454,9 @@ namespace JoinIt.Controllers
             _context.Eventos.Remove(evento);
 
             await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = "Evento eliminado com sucesso.";
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -376,6 +475,17 @@ namespace JoinIt.Controllers
                 return Challenge();
 
             var evento = await _context.Eventos.FindAsync(id);
+
+            if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
+            {
+                TempData["Erro"] =
+                    "Já não é possível participar neste evento.";
+
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
 
             if (evento == null)
                 return NotFound();
@@ -422,6 +532,8 @@ namespace JoinIt.Controllers
 
             await _context.SaveChangesAsync();
 
+            TempData["Sucesso"] = "Entraste no evento com sucesso.";
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -448,14 +560,14 @@ namespace JoinIt.Controllers
 
             await _context.SaveChangesAsync();
 
+            TempData["Sucesso"] = "Saíste do evento.";
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Convidar(
-    int id,
-    string utilizadorId)
+        public async Task<IActionResult> Convidar(int id, string utilizadorId)
         {
             var userId = _userManager.GetUserId(User);
 
@@ -475,6 +587,17 @@ namespace JoinIt.Controllers
             var evento = await _context.Eventos
                 .Include(e => e.Participantes)
                 .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
+            {
+                TempData["Erro"] =
+                    "Não é possível enviar convites para este evento.";
+
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
 
             if (evento == null)
             {
@@ -507,10 +630,10 @@ namespace JoinIt.Controllers
                     a.Estado == EstadoAmizade.Aceite &&
                     (
                         (a.PedidoPorId == userId &&
-                         a.PedidoAId == utilizadorId)
+                            a.PedidoAId == utilizadorId)
                         ||
                         (a.PedidoPorId == utilizadorId &&
-                         a.PedidoAId == userId)
+                            a.PedidoAId == userId)
                     ));
 
             if (!saoAmigos)
@@ -523,6 +646,8 @@ namespace JoinIt.Controllers
 
             if (jaParticipa)
             {
+                TempData["Aviso"] = "Já participas neste evento.";
+
                 return RedirectToAction(
                     nameof(Details),
                     new { id }
@@ -576,6 +701,86 @@ namespace JoinIt.Controllers
                 .ToListAsync();
 
             return View(eventos);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AlterarEstado(
+    int id,
+    EstadoEvento novoEstado)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var evento = await _context.Eventos
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (evento == null)
+            {
+                return NotFound();
+            }
+
+            var podeGerir =
+                evento.CriadorId == userId ||
+                User.IsInRole("Admin");
+
+            if (!podeGerir)
+            {
+                return Forbid();
+            }
+
+            var transicaoValida = novoEstado switch
+            {
+                EstadoEvento.ADecorrer =>
+                    evento.Estado == EstadoEvento.ParaBreve,
+
+                EstadoEvento.Terminado =>
+                    evento.Estado == EstadoEvento.ADecorrer,
+
+                EstadoEvento.Cancelado =>
+                    evento.Estado == EstadoEvento.ParaBreve ||
+                    evento.Estado == EstadoEvento.ADecorrer,
+
+                _ => false
+            };
+
+            if (!transicaoValida)
+            {
+                TempData["Erro"] =
+                    "Não é possível alterar o evento para esse estado.";
+
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id }
+                );
+            }
+
+            evento.Estado = novoEstado;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = novoEstado switch
+            {
+                EstadoEvento.ADecorrer =>
+                    "O evento foi iniciado.",
+
+                EstadoEvento.Terminado =>
+                    "O evento foi terminado.",
+
+                EstadoEvento.Cancelado =>
+                    "O evento foi cancelado.",
+
+                _ => "Estado atualizado."
+            };
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id }
+            );
         }
     }
 }

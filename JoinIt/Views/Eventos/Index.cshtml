@@ -6,6 +6,13 @@
     var userId = User.FindFirst(
         System.Security.Claims.ClaimTypes.NameIdentifier
     )?.Value;
+
+    var pesquisa = ViewData["Pesquisa"] as string;
+    var categoriaId = ViewData["CategoriaId"] as int?;
+    var tipo = ViewData["Tipo"] as string;
+    var apenasFuturos = ViewData["ApenasFuturos"] as bool? ?? false;
+    var participo = ViewData["Participo"] as bool? ?? false;
+    var ordem = ViewData["Ordem"] as string ?? "data";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,6 +26,150 @@
     <a asp-action="Create" class="btn btn-primary">
         Criar Evento
     </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+        <form asp-action="Index"
+              method="get"
+              class="row g-3">
+
+            <div class="col-12 col-lg-4">
+                <label for="pesquisa" class="form-label">
+                    Pesquisar
+                </label>
+
+                <input id="pesquisa"
+                       name="pesquisa"
+                       value="@pesquisa"
+                       type="search"
+                       class="form-control"
+                       placeholder="Título do evento..." />
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-2">
+                <label for="categoriaId" class="form-label">
+                    Categoria
+                </label>
+
+                <select id="categoriaId"
+                        name="categoriaId"
+                        asp-items="ViewBag.Categorias"
+                        class="form-select">
+
+                    <option value="">Todas</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-2">
+                <label for="tipo" class="form-label">
+                    Tipo
+                </label>
+
+                <select id="tipo"
+                        name="tipo"
+                        class="form-select">
+
+                    <option value=""
+                            selected="@(string.IsNullOrEmpty(tipo))">
+                        Todos
+                    </option>
+
+                    <option value="publico"
+                            selected="@(tipo == "publico")">
+                        Públicos
+                    </option>
+
+                    <option value="privado"
+                            selected="@(tipo == "privado")">
+                        Privados
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-2">
+                <label for="ordem" class="form-label">
+                    Ordenar
+                </label>
+
+                <select id="ordem"
+                        name="ordem"
+                        class="form-select">
+
+                    <option value="data"
+                            selected="@(ordem == "data")">
+                        Data crescente
+                    </option>
+
+                    <option value="data_desc"
+                            selected="@(ordem == "data_desc")">
+                        Data decrescente
+                    </option>
+
+                    <option value="titulo"
+                            selected="@(ordem == "titulo")">
+                        Título A–Z
+                    </option>
+
+                    <option value="titulo_desc"
+                            selected="@(ordem == "titulo_desc")">
+                        Título Z–A
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-12 col-lg-2 d-flex align-items-end">
+                <button type="submit"
+                        class="btn btn-primary w-100">
+                    Aplicar filtros
+                </button>
+            </div>
+
+            <div class="col-12">
+                <div class="d-flex gap-4 flex-wrap">
+
+                    <div class="form-check">
+                        <input id="apenasFuturos"
+                               name="apenasFuturos"
+                               value="true"
+                               type="checkbox"
+                               class="form-check-input"
+                               checked="@apenasFuturos" />
+
+                        <label for="apenasFuturos"
+                               class="form-check-label">
+                            Apenas eventos futuros
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input id="participo"
+                               name="participo"
+                               value="true"
+                               type="checkbox"
+                               class="form-check-input"
+                               checked="@participo" />
+
+                        <label for="participo"
+                               class="form-check-label">
+                            Eventos em que participo
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="col-12">
+                <a asp-action="Index"
+                   class="btn btn-outline-secondary btn-sm">
+                    Limpar filtros
+                </a>
+            </div>
+
+        </form>
+
+    </div>
 </div>
 
 @if (!Model.Any())
