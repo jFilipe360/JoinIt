@@ -21,6 +21,12 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.AccessDeniedPath = "/Home/AcessoNegado";
+});
+
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddSignalR();
@@ -67,6 +73,35 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+var paginasIdentityPermitidas = new HashSet<string>(
+    StringComparer.OrdinalIgnoreCase)
+{
+    "/Identity/Account/Login",
+    "/Identity/Account/Register",
+    "/Identity/Account/Logout",
+};
+
+app.Use(async (context, next) =>
+{
+    var caminho = context.Request.Path.Value?
+        .TrimEnd('/') ?? string.Empty;
+
+    var pertenceAoIdentity = caminho.StartsWith(
+        "/Identity",
+        StringComparison.OrdinalIgnoreCase);
+
+    if (pertenceAoIdentity &&
+        !paginasIdentityPermitidas.Contains(caminho))
+    {
+        context.Response.StatusCode =
+            StatusCodes.Status404NotFound;
+
+        return;
+    }
+
+    await next();
+});
 
 app.MapControllers();
 

@@ -201,64 +201,38 @@ footer {
 
 /* ---------- Identity ---------- */
 .identity-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 2rem 0;
 }
 
-    .identity-page > .row {
-        min-height: 620px;
-    }
-
-.identity-info,
-.identity-form {
-    padding: clamp(2rem, 5vw, 4rem);
+.identity-card {
+    width: 100%;
+    max-width: 520px;
+    background-color: white;
+    padding: clamp(2rem, 5vw, 3rem);
+    border-radius: 24px;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.1);
 }
 
-.identity-info {
-    background: linear-gradient(145deg, #071b33, #123a63);
-    color: white;
-    border-radius: 24px 0 0 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.identity-logo {
-    color: white;
-    font-size: 1.8rem;
+.identity-brand {
+    color: #071b33;
+    font-size: 2rem;
     font-weight: 700;
 }
 
-    .identity-logo span {
+    .identity-brand span {
         color: #ffc107;
     }
 
-.identity-feature {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: rgba(255, 255, 255, 0.75);
-}
-
-    .identity-feature i {
-        color: #ffc107;
-        font-size: 1.4rem;
-    }
-
-.identity-form {
-    background-color: white;
-    border-radius: 0 24px 24px 0;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.identity-form .form-control,
-.identity-form .input-group-text {
+.identity-card .form-control,
+.identity-card .input-group-text {
     min-height: 52px;
 }
 
-.identity-form .input-group-text {
+.identity-card .input-group-text {
     background-color: #f8f9fa;
 }
 
@@ -270,25 +244,10 @@ footer {
     margin: 1.5rem 0;
 }
 
-.identity-divider::before,
-.identity-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background-color: #dee2e6;
-}
-
-@media (max-width: 991.98px) {
-    .identity-page > .row {
-        min-height: auto;
+    .identity-divider::before,
+    .identity-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background-color: #dee2e6;
     }
-
-    .identity-info {
-        border-radius: 24px 24px 0 0;
-        min-height: 330px;
-    }
-
-    .identity-form {
-        border-radius: 0 0 24px 24px;
-    }
-}
