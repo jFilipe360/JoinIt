@@ -1,0 +1,129 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Iniciar sessão";
+}
+
+<div class="identity-page">
+    <section class="identity-card">
+
+        <div class="text-center mb-4">
+            <div class="identity-brand mb-3">
+                Join<span>It</span>
+            </div>
+
+            <h1 class="h3 fw-bold mb-2">
+                Iniciar sessão
+            </h1>
+
+            <p class="text-muted mb-0">
+                Introduz os teus dados para continuar.
+            </p>
+        </div>
+
+        <form id="account" method="post">
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3"
+                 role="alert">
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Input.Email"
+                       class="form-label">
+                    Email
+                </label>
+
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-envelope"></i>
+                    </span>
+
+                    <input asp-for="Input.Email"
+                           class="form-control"
+                           autocomplete="username"
+                           aria-required="true"
+                           placeholder="nome@exemplo.pt" />
+                </div>
+
+                <span asp-validation-for="Input.Email"
+                      class="text-danger small">
+                </span>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label asp-for="Input.Password"
+                           class="form-label">
+                        Palavra-passe
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-lock"></i>
+                    </span>
+
+                    <input asp-for="Input.Password"
+                           class="form-control"
+                           autocomplete="current-password"
+                           aria-required="true"
+                           placeholder="Palavra-passe" />
+                </div>
+
+                <span asp-validation-for="Input.Password"
+                      class="text-danger small">
+                </span>
+            </div>
+
+            <button id="login-submit"
+                    type="submit"
+                    class="btn btn-warning btn-lg w-100 fw-semibold">
+                Iniciar sessão
+            </button>
+
+            <div class="text-center mt-4">
+                <span class="text-muted">
+                    Ainda não tens conta?
+                </span>
+
+                <a asp-page="./Register"
+                   asp-route-returnUrl="@Model.ReturnUrl"
+                   class="fw-semibold text-decoration-none">
+                    Criar conta
+                </a>
+            </div>
+
+        </form>
+
+        @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+        {
+            <div class="identity-divider">
+                <span>ou</span>
+            </div>
+
+            <form id="external-account"
+                  asp-page="./ExternalLogin"
+                  asp-route-returnUrl="@Model.ReturnUrl"
+                  method="post">
+
+                @foreach (var provider in Model.ExternalLogins!)
+                {
+                    <button type="submit"
+                            class="btn btn-outline-secondary w-100 mb-2"
+                            name="provider"
+                            value="@provider.Name">
+                        Continuar com @provider.DisplayName
+                    </button>
+                }
+
+            </form>
+        }
+
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

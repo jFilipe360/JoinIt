@@ -1,0 +1,52 @@
+@model JoinIt.Models.Categoria
+
+@{
+    ViewData["Title"] = "Eliminar categoria";
+}
+
+<div class="py-4">
+
+    <h1 class="h3 fw-bold mb-2">
+        Eliminar categoria
+    </h1>
+
+    <p class="text-muted mb-4">
+        Confirma que pretendes eliminar esta categoria.
+    </p>
+
+    <div class="alert alert-warning">
+        Esta ação poderá não ser possível caso existam eventos associados
+        a esta categoria.
+    </div>
+
+    <dl class="row mb-4">
+
+        <dt class="col-sm-3">
+            Nome
+        </dt>
+
+        <dd class="col-sm-9">
+            @Model.Nome
+        </dd>
+
+    </dl>
+
+    <form asp-action="Delete" method="post">
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="d-flex gap-2">
+            <button type="submit"
+                    class="btn btn-danger">
+                Eliminar
+            </button>
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+        </div>
+
+    </form>
+
+</div>

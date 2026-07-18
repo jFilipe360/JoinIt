@@ -1,0 +1,729 @@
+@using System.Globalization
+@model JoinIt.Models.Evento
+
+@{
+    ViewData["Title"] = "Detalhes";
+
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    var amigosDisponiveis = ViewBag.AmigosDisponiveis as List<JoinIt.Models.ApplicationUser> ?? new List<JoinIt.Models.ApplicationUser>();
+
+    bool souCriador = Model.CriadorId == userId;
+
+    bool jaParticipo = Model.Participantes.Any(p => p.UserId == userId);
+
+    bool eventoCheio = Model.Participantes.Count >= Model.NumMaxParticipantes;
+
+    bool podeUsarChat = ViewBag.PodeUsarChat == true;
+
+    bool podeGerirEstado = souCriador || User.IsInRole("Admin");
+}
+
+<h1>Detalhes</h1>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2>@Model.Titulo</h2>
+
+        <p class="text-muted">
+            @Model.DataHora.ToString("dd/MM/yyyy HH:mm")
+        </p>
+
+        <span class="badge bg-warning text-dark">
+            @Model.Categoria.Nome
+        </span>
+        <hr />
+
+        @switch (Model.Estado)
+        {
+            case JoinIt.Enums.EstadoEvento.ParaBreve:
+                <span class="badge bg-primary">
+                    Para breve
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.ADecorrer:
+                <span class="badge bg-success">
+                    A decorrer
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.Terminado:
+                <span class="badge bg-secondary">
+                    Terminado
+                </span>
+                break;
+
+            case JoinIt.Enums.EstadoEvento.Cancelado:
+                <span class="badge bg-danger">
+                    Cancelado
+                </span>
+                break;
+        }
+
+        <h5>Descrição</h5>
+        <p>@Model.Descricao</p>
+        <hr />
+
+        <div id="map"
+             class="event-map"
+             data-latitude="@Model.Latitude.ToString(CultureInfo.InvariantCulture)"
+             data-longitude="@Model.Longitude.ToString(CultureInfo.InvariantCulture)"
+             data-titulo="@Model.Titulo">
+        </div>
+
+        <h5>Participantes</h5>
+        <p>
+            @Model.Participantes.Count /
+            @Model.NumMaxParticipantes
+        </p>
+
+        <hr />
+
+        <h4>Participantes</h4>
+
+        @if (Model.Participantes.Any())
+        {
+            <ul class="list-group">
+                @foreach (var participante in Model.Participantes)
+                {
+                    <li class="list-group-item">
+                        @if (participante.IsOrganizador)
+                        {
+                            <a asp-controller="Perfis" asp-action="Details" asp-route-id="@participante.UserId" class="text-decoration-none">
+                                @(participante.User.Nome?? participante.User.UserName)
+                            </a>
+
+                            <span class="badge bg-warning text-dark">
+                                Organizador
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-controller="Perfis" asp-action="Details" asp-route-id="@participante.UserId" class="text-decoration-none">
+                                @(participante.User.Nome ?? participante.User.UserName)
+                            </a>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Ainda não existem participantes.</p>
+        }
+
+        @if (souCriador && Model.IsPrivado)
+        {
+            <hr />
+
+            <h4>Convidar amigos</h4>
+
+            <p class="text-muted">
+                Escolhe um amigo para convidar para este evento privado.
+            </p>
+
+            @if (amigosDisponiveis.Any())
+            {
+                <form asp-action="Convidar"
+                      asp-route-id="@Model.Id"
+                      method="post"
+                      class="row g-2 mb-4">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="col-12 col-md">
+
+                        <select name="utilizadorId"
+                                class="form-select"
+                                required>
+
+                            <option value="">
+                                Escolhe um amigo
+                            </option>
+
+                            @foreach (var amigo in amigosDisponiveis)
+                            {
+                                <option value="@amigo.Id">
+                                    @amigo.Nome (@amigo.UserName)
+                                </option>
+                            }
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-12 col-md-auto">
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Enviar convite
+                        </button>
+
+                    </div>
+
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-light border">
+                    Não existem amigos disponíveis para convidar.
+                </div>
+            }
+
+            <h5>Convites enviados</h5>
+
+            @if (!Model.Convites.Any())
+            {
+                <p class="text-muted">
+                    Ainda não foram enviados convites.
+                </p>
+            }
+            else
+            {
+                <ul class="list-group">
+
+                    @foreach (var convite in Model.Convites
+                                .OrderByDescending(c => c.DataConvite))
+                    {
+                        <li class="list-group-item
+                                       d-flex justify-content-between
+                                       align-items-center">
+
+                            <div>
+                                <strong>@convite.Utilizador.Nome</strong>
+
+                                <div class="text-muted small">
+                                    @convite.Utilizador.UserName
+                                </div>
+                            </div>
+
+                            @switch (convite.Estado)
+                            {
+                                case JoinIt.Enums.EstadoPedido.Pendente:
+                                    <span class="badge bg-warning text-dark">
+                                        Pendente
+                                    </span>
+                                    break;
+
+                                case JoinIt.Enums.EstadoPedido.Aceite:
+                                    <span class="badge bg-success">
+                                        Aceite
+                                    </span>
+                                    break;
+
+                                case JoinIt.Enums.EstadoPedido.Rejeitado:
+                                    <span class="badge bg-danger">
+                                        Rejeitado
+                                    </span>
+                                    break;
+                            }
+
+                        </li>
+                    }
+
+                </ul>
+            }
+        }
+
+        @if (podeUsarChat)
+        {
+            <hr />
+
+            <section class="mt-4">
+                <h4>Chat do evento</h4>
+
+                <p class="text-muted">
+                    Comunica em tempo real com os participantes.
+                </p>
+
+                <div id="chat-mensagens"
+                     class="border rounded p-3 mb-3 bg-light"
+                     style="height: 350px; overflow-y: auto;">
+
+                    @if (!Model.Mensagens.Any())
+                    {
+                        <p id="chat-vazio"
+                           class="text-muted text-center my-5">
+                            Ainda não existem mensagens.
+                        </p>
+                    }
+                    else
+                    {
+                        @foreach (var mensagem in Model.Mensagens
+                                        .OrderBy(m => m.DataEnvio))
+                        {
+                            var nomeAutor =
+                            !string.IsNullOrWhiteSpace(mensagem.User?.Nome)
+                            ? mensagem.User.Nome
+                            : mensagem.User?.UserName ?? "Utilizador";
+
+                            <div class="chat-mensagem border-bottom pb-2 mb-3"
+                                 id="mensagem-@mensagem.Id">
+
+                                <div class="d-flex justify-content-between gap-3">
+
+                                    <div class="flex-grow-1">
+
+                                        <div class="d-flex justify-content-between gap-3">
+                                            <strong>@nomeAutor</strong>
+
+                                            <small class="text-muted">
+                                                @mensagem.DataEnvio.ToString("dd/MM HH:mm")
+                                            </small>
+                                        </div>
+
+                                        <div class="mt-1 text-break">
+                                            @mensagem.Texto
+                                        </div>
+
+                                    </div>
+
+                                    @if (souCriador || User.IsInRole("Admin"))
+                                    {
+                                        <form asp-controller="Eventos"
+                                              asp-action="EliminarMensagem"
+                                              asp-route-id="@mensagem.Id"
+                                              method="post"
+                                              class="flex-shrink-0"
+                                              onsubmit="return confirm('Tens a certeza de que queres eliminar esta mensagem?');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    title="Eliminar mensagem">
+                                                Eliminar
+                                            </button>
+
+                                        </form>
+                                    }
+
+                                </div>
+
+                            </div>
+                        }
+                    }
+
+                </div>
+
+                <div id="chat-erro"
+                     class="alert alert-danger d-none">
+                </div>
+
+                <form id="chat-form">
+                    <div class="input-group">
+
+                        <input id="chat-texto"
+                               type="text"
+                               maxlength="500"
+                               class="form-control"
+                               placeholder="Escreve uma mensagem..."
+                               autocomplete="off" />
+
+                        <button id="chat-enviar"
+                                type="submit"
+                                class="btn btn-primary"
+                                disabled>
+                            Enviar
+                        </button>
+
+                    </div>
+
+                    <div class="form-text">
+                        Máximo de 500 caracteres.
+                    </div>
+                </form>
+            </section>
+        }
+
+        @if (!souCriador)
+        {
+            if (jaParticipo)
+            {
+                <form asp-action="Sair"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-danger">
+                        Sair do evento
+                    </button>
+                </form>
+            }
+            else if (eventoCheio)
+            {
+                <button class="btn btn-secondary" disabled>
+                    Evento cheio
+                </button>
+            }
+            else
+            {
+                <form asp-action="Participar"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <button type="submit" class="btn btn-primary">
+                        Participar
+                    </button>
+                </form>
+            }
+        }
+    </div>
+</div>
+<div>
+    @if (souCriador)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            Editar
+        </a>
+
+        <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
+            Eliminar Evento
+        </a>
+    }
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Voltar
+    </a>
+
+    @if (podeGerirEstado)
+    {
+        <div class="d-flex gap-2 flex-wrap mt-3">
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ParaBreve)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.ADecorrer" />
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        Iniciar evento
+                    </button>
+                </form>
+            }
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ADecorrer)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.Terminado" />
+
+                    <button type="submit"
+                            class="btn btn-secondary">
+                        Terminar evento
+                    </button>
+                </form>
+            }
+
+            @if (Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ParaBreve ||
+                    Model.Estado ==
+                    JoinIt.Enums.EstadoEvento.ADecorrer)
+            {
+                <form asp-action="AlterarEstado"
+                      asp-route-id="@Model.Id"
+                      method="post"
+                      onsubmit="return confirm('Tens a certeza de que queres cancelar este evento?');">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden"
+                           name="novoEstado"
+                           value="@JoinIt.Enums.EstadoEvento.Cancelado" />
+
+                    <button type="submit"
+                            class="btn btn-outline-danger">
+                        Cancelar evento
+                    </button>
+                </form>
+            }
+
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const mapElement = document.getElementById("map");
+
+            const latitude = Number.parseFloat(
+                mapElement.dataset.latitude
+            );
+
+            const longitude = Number.parseFloat(
+                mapElement.dataset.longitude
+            );
+
+            const titulo = mapElement.dataset.titulo;
+
+            // Impede a criação do mapa quando as coordenadas são inválidas
+            if (!Number.isFinite(latitude) ||
+                !Number.isFinite(longitude)) {
+
+                mapElement.innerHTML =
+                    '<div class="alert alert-warning">' +
+                    'Localização indisponível.' +
+                    '</div>';
+
+                return;
+            }
+
+            // Inicializa o mapa na localização do evento
+            const map = L.map("map", {
+                scrollWheelZoom: false
+            }).setView(
+                [latitude, longitude],
+                15
+            );
+
+            L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    maxZoom: 19,
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }
+            ).addTo(map);
+
+            // Apresenta um marcador com o título do evento
+            L.marker([latitude, longitude])
+                .addTo(map)
+                .bindPopup(titulo)
+                .openPopup();
+        });
+    </script>
+
+    @if (podeUsarChat)
+    {
+        <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", async function () {
+
+                const eventoId = @Model.Id;
+
+                const mensagensElement =
+                    document.getElementById("chat-mensagens");
+
+                const mensagemVaziaElement =
+                    document.getElementById("chat-vazio");
+
+                const formulario =
+                    document.getElementById("chat-form");
+
+                const textoInput =
+                    document.getElementById("chat-texto");
+
+                const enviarButton =
+                    document.getElementById("chat-enviar");
+
+                const erroElement =
+                    document.getElementById("chat-erro");
+
+                // Configura a ligação ao Hub e ativa a reconexão automática
+                const connection =
+                    new signalR.HubConnectionBuilder()
+                        .withUrl("/chatHub")
+                        .withAutomaticReconnect()
+                        .build();
+
+                function mostrarErro(mensagem) {
+                    erroElement.textContent = mensagem;
+                    erroElement.classList.remove("d-none");
+                }
+
+                function esconderErro() {
+                    erroElement.textContent = "";
+                    erroElement.classList.add("d-none");
+                }
+
+                // Adiciona uma mensagem recebida à área do chat
+                function adicionarMensagem(mensagem) {
+
+                    if (mensagemVaziaElement !== null) {
+                        mensagemVaziaElement.remove();
+                    }
+
+                    const container =
+                        document.createElement("div");
+
+                    container.classList.add(
+                        "chat-mensagem",
+                        "mb-3"
+                    );
+
+                    const cabecalho =
+                        document.createElement("div");
+
+                    cabecalho.classList.add(
+                        "d-flex",
+                        "justify-content-between",
+                        "gap-3"
+                    );
+
+                    const autor =
+                        document.createElement("strong");
+
+                    autor.textContent =
+                        mensagem.utilizador;
+
+                    const data =
+                        document.createElement("small");
+
+                    data.classList.add("text-muted");
+                    data.textContent = mensagem.dataEnvio;
+
+                    const texto =
+                        document.createElement("div");
+
+                    texto.classList.add("mt-1");
+                    texto.textContent = mensagem.texto;
+
+                    cabecalho.appendChild(autor);
+                    cabecalho.appendChild(data);
+
+                    container.appendChild(cabecalho);
+                    container.appendChild(texto);
+
+                    mensagensElement.appendChild(container);
+
+                    mensagensElement.scrollTop =
+                        mensagensElement.scrollHeight;
+                }
+
+                // Recebe as mensagens enviadas pelo servidor em tempo real
+                connection.on(
+                    "ReceberMensagem",
+                    function (mensagem) {
+                        adicionarMensagem(mensagem);
+                    }
+                );
+
+                // Volta a entrar no grupo do evento após uma reconexão
+                connection.onreconnecting(function () {
+                    enviarButton.disabled = true;
+                    mostrarErro(
+                        "Ligação perdida. A tentar restabelecer..."
+                    );
+                });
+
+                connection.onreconnected(async function () {
+                    try {
+                        await connection.invoke(
+                            "EntrarNoEvento",
+                            eventoId
+                        );
+
+                        enviarButton.disabled = false;
+                        esconderErro();
+                    }
+                    catch (erro) {
+                        mostrarErro(
+                            erro.message ||
+                            "Não foi possível voltar a entrar no chat."
+                        );
+                    }
+                });
+
+                connection.onclose(function () {
+                    enviarButton.disabled = true;
+                    mostrarErro(
+                        "A ligação ao chat foi terminada."
+                    );
+                });
+
+                // Envia a mensagem através do Hub sem recarregar a página
+                formulario.addEventListener(
+                    "submit",
+                    async function (evento) {
+
+                        evento.preventDefault();
+                        esconderErro();
+
+                        const texto =
+                            textoInput.value.trim();
+
+                        if (texto === "") {
+                            mostrarErro(
+                                "Escreve uma mensagem."
+                            );
+
+                            return;
+                        }
+
+                        enviarButton.disabled = true;
+
+                        try {
+                            await connection.invoke(
+                                "EnviarMensagem",
+                                eventoId,
+                                texto
+                            );
+
+                            textoInput.value = "";
+                            textoInput.focus();
+                        }
+                        catch (erro) {
+                            mostrarErro(
+                                erro.message ||
+                                "Não foi possível enviar a mensagem."
+                            );
+                        }
+                        finally {
+                            if (connection.state ===
+                                signalR.HubConnectionState.Connected) {
+
+                                enviarButton.disabled = false;
+                            }
+                        }
+                    }
+                );
+
+                // Inicia a ligação e adiciona o utilizador ao grupo do evento
+                try {
+                    await connection.start();
+
+                    await connection.invoke(
+                        "EntrarNoEvento",
+                        eventoId
+                    );
+
+                    enviarButton.disabled = false;
+                    esconderErro();
+
+                    mensagensElement.scrollTop =
+                        mensagensElement.scrollHeight;
+                }
+                catch (erro) {
+                    mostrarErro(
+                        erro.message ||
+                        "Não foi possível ligar ao chat."
+                    );
+                }
+            });
+        </script>
+    }
+}

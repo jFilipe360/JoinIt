@@ -1,0 +1,42 @@
+@model JoinIt.Models.Categoria
+
+@{
+    ViewData["Title"] = "Detalhes da categoria";
+}
+
+<div class="py-4">
+
+    <h1 class="h3 fw-bold mb-2">
+        Detalhes da categoria
+    </h1>
+
+    <p class="text-muted mb-4">
+        Informação da categoria selecionada.
+    </p>
+
+    <dl class="row mb-4">
+
+        <dt class="col-sm-3">
+            Nome
+        </dt>
+
+        <dd class="col-sm-9">
+            @Model.Nome
+        </dd>
+
+    </dl>
+
+    <div class="d-flex gap-2">
+        <a asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="btn btn-warning fw-semibold">
+            Editar
+        </a>
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            Voltar
+        </a>
+    </div>
+
+</div>

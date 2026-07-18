@@ -1,13 +1,106 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using JoinIt.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
+using System.Reflection.Emit;
 
 namespace JoinIt.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+        }
+        //Deinir as DbSets para cada entidade do modelo
+        public DbSet<Evento> Eventos { get; set; }
+
+        public DbSet<Categoria> Categorias { get; set; }
+
+        public DbSet<Participante> Participantes { get; set; }
+
+        public DbSet<Mensagem> Mensagens { get; set; }
+
+        public DbSet<Amizade> Amizades { get; set; }
+
+        public DbSet<ConviteEvento> ConvitesEventos { get; set; }
+
+        public DbSet<Notificacao> Notificacoes { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            // Configuração da relação 
+            builder.Entity<Evento>()
+                .HasOne(e => e.Criador)
+                .WithMany(u => u.EventosCriados)
+                .HasForeignKey(e => e.CriadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Evento>()
+                .HasOne(e => e.Categoria)
+                .WithMany(c => c.Eventos)
+                .HasForeignKey(e => e.CategoriaId);
+
+            builder.Entity<Participante>()
+                .HasOne(p => p.User)
+                .WithMany(u => u.EventosParticipados)
+                .HasForeignKey(p => p.UserId);
+
+            builder.Entity<Participante>()
+                .HasOne(p => p.Evento)
+                .WithMany(e => e.Participantes)
+                .HasForeignKey(p => p.EventoId);
+
+            builder.Entity<Mensagem>()
+                .HasOne(m => m.User)
+                .WithMany(u => u.Mensagens)
+                .HasForeignKey(m => m.UserId);
+
+            builder.Entity<Mensagem>()
+                .HasOne(m => m.Evento)
+                .WithMany(e => e.Mensagens)
+                .HasForeignKey(m => m.EventoId);
+
+            builder.Entity<Amizade>()
+                .HasOne(a => a.PedidoPor)
+                .WithMany(u => u.PedidosEnviados)
+                .HasForeignKey(a => a.PedidoPorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Amizade>()
+                .HasOne(a => a.PedidoA)
+                .WithMany(u => u.PedidosRecebidos)
+                .HasForeignKey(a => a.PedidoAId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ConviteEvento>()
+                .HasOne(c => c.Evento)
+                .WithMany(e => e.Convites)
+                .HasForeignKey(c => c.EventoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ConviteEvento>()
+                .HasOne(c => c.Utilizador)
+                .WithMany(u => u.ConvitesRecebidos)
+                .HasForeignKey(c => c.UtilizadorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ConviteEvento>()
+                .HasIndex(c => new
+                {
+                    c.EventoId,
+                    c.UtilizadorId
+                })
+                .IsUnique();
+
+            builder.Entity<Notificacao>()
+            .HasOne(n => n.Utilizador)
+            .WithMany(u => u.Notificacoes)
+            .HasForeignKey(n => n.UtilizadorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         }
     }
 }

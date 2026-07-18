@@ -1,0 +1,73 @@
+﻿@{
+    var codigo = ViewBag.Codigo is int valor
+        ? valor
+        : 500;
+
+    ViewData["Title"] = codigo switch
+    {
+        403 => "Acesso negado",
+        404 => "Página não encontrada",
+        _ => "Erro"
+    };
+}
+
+<div class="d-flex justify-content-center py-5">
+    <div class="card shadow-sm text-center"
+         style="max-width: 650px; width: 100%;">
+
+        <div class="card-body py-5 px-4">
+
+            <div class="display-1 fw-bold text-warning mb-3">
+                @codigo
+            </div>
+
+            @if (codigo == 403)
+            {
+                <h1 class="h3 mb-3">
+                    Acesso negado
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Não tens permissão para aceder a esta página.
+                </p>
+            }
+            else if (codigo == 404)
+            {
+                <h1 class="h3 mb-3">
+                    Página não encontrada
+                </h1>
+
+                <p class="text-muted mb-4">
+                    A página que procuras não existe ou foi removida.
+                </p>
+            }
+            else
+            {
+                <h1 class="h3 mb-3">
+                    Ocorreu um erro
+                </h1>
+
+                <p class="text-muted mb-4">
+                    Não foi possível concluir o pedido.
+                </p>
+            }
+
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="btn btn-primary">
+                    Página inicial
+                </a>
+
+                <a asp-controller="Eventos"
+                   asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Ver eventos
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+</div>

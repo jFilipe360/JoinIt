@@ -1,0 +1,137 @@
+﻿@using System.Text.Json
+@model IEnumerable<JoinIt.Models.Evento>
+
+@{
+    ViewData["Title"] = "Mapa de Eventos";
+
+    var eventosMapa = Model.Select(evento => new
+    {
+        id = evento.Id,
+        titulo = evento.Titulo,
+        categoria = evento.Categoria?.Nome ?? "Sem categoria",
+        dataHora = evento.DataHora.ToString("dd/MM/yyyy HH:mm"),
+        latitude = evento.Latitude,
+        longitude = evento.Longitude,
+        detalhesUrl = Url.Action(
+            "Details",
+            "Eventos",
+            new { id = evento.Id }
+        )
+    });
+
+    var eventosJson = JsonSerializer.Serialize(eventosMapa);
+}
+
+<div class="mb-4">
+    <h1 class="mb-1">Mapa de Eventos</h1>
+
+    <p class="text-muted mb-0">
+        Explora os eventos públicos disponíveis.
+    </p>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Ainda não existem eventos públicos com uma localização definida.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div id="mapa-eventos" class="event-map-large"></div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.Any())
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+
+                const eventos = @Html.Raw(eventosJson);
+
+                // Inicializa o mapa centrado em Portugal
+                const mapa = L.map("mapa-eventos").setView(
+                    [39.5, -8.0],
+                    7
+                );
+
+                // Adiciona ao mapa a camada disponibilizada pelo OpenStreetMap
+                L.tileLayer(
+                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    {
+                        maxZoom: 19,
+                        attribution:
+                            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    }
+                ).addTo(mapa);
+
+                const marcadores = [];
+
+                // Cria um marcador e uma janela de informação para cada evento
+                eventos.forEach(function (evento) {
+
+                    const marcador = L.marker([
+                        evento.latitude,
+                        evento.longitude
+                    ]).addTo(mapa);
+
+                    const popup = document.createElement("div");
+
+                    const titulo = document.createElement("h6");
+                    titulo.textContent = evento.titulo;
+                    titulo.classList.add("mb-2");
+
+                    const categoria = document.createElement("p");
+                    categoria.textContent =
+                        "Categoria: " + evento.categoria;
+                    categoria.classList.add("mb-1");
+
+                    const data = document.createElement("p");
+                    data.textContent =
+                        "Data: " + evento.dataHora;
+                    data.classList.add("mb-2");
+
+                    const link = document.createElement("a");
+                    link.href = evento.detalhesUrl;
+                    link.textContent = "Ver detalhes";
+                    link.classList.add(
+                        "btn",
+                        "btn-primary",
+                        "btn-sm"
+                    );
+
+                    popup.appendChild(titulo);
+                    popup.appendChild(categoria);
+                    popup.appendChild(data);
+                    popup.appendChild(link);
+
+                    marcador.bindPopup(popup);
+
+                    marcadores.push(marcador);
+                });
+
+                // Ajusta automaticamente o mapa à localização dos marcadores
+                if (marcadores.length === 1) {
+                    mapa.setView(
+                        marcadores[0].getLatLng(),
+                        15
+                    );
+                }
+                else if (marcadores.length > 1) {
+                    const grupo = L.featureGroup(marcadores);
+
+                    mapa.fitBounds(
+                        grupo.getBounds(),
+                        {
+                            padding: [40, 40]
+                        }
+                    );
+                }
+            });
+        </script>
+    }
+}

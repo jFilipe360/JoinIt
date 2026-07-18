@@ -1,0 +1,53 @@
+@model JoinIt.Models.Evento
+
+@{
+    ViewData["Title"] = "Eliminar Evento";
+}
+
+<h1>Eliminar Evento</h1>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <div class="alert alert-danger">
+            <strong>Atenção!</strong> Esta ação é irreversível.
+        </div>
+
+        <h2>@Model.Titulo</h2>
+
+        <p class="text-muted">
+            @Model.DataHora.ToString("dd/MM/yyyy HH:mm")
+        </p>
+
+        <span class="badge bg-warning text-dark">
+            @Model.Categoria.Nome
+        </span>
+
+        <hr />
+
+        <h5>Descrição</h5>
+        <p>@Model.Descricao</p>
+
+        <hr />
+
+        <p>
+            <strong>Participantes:</strong>
+            @Model.Participantes.Count / @Model.NumMaxParticipantes
+        </p>
+
+        <form asp-action="Delete" class="mt-4">
+            <input type="hidden" asp-for="Id" />
+
+            <button type="submit" class="btn btn-danger">
+                Eliminar Evento
+            </button>
+
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="btn btn-secondary">
+                Cancelar
+            </a>
+        </form>
+
+    </div>
+</div>
