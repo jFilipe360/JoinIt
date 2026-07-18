@@ -884,5 +884,47 @@ namespace JoinIt.Controllers
                 new { id }
             );
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarMensagem(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+
+            if (userId == null)
+            {
+                return Challenge();
+            }
+
+            var mensagem = await _context.Mensagens
+                .Include(m => m.Evento)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (mensagem == null)
+            {
+                return NotFound();
+            }
+
+            var podeEliminar =
+                mensagem.Evento.CriadorId == userId ||
+                User.IsInRole("Admin");
+
+            if (!podeEliminar)
+            {
+                return Forbid();
+            }
+
+            var eventoId = mensagem.EventoId;
+
+            _context.Mensagens.Remove(mensagem);
+            await _context.SaveChangesAsync();
+
+            TempData["Sucesso"] = "Mensagem eliminada com sucesso.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = eventoId }
+            );
+        }
     }
 }

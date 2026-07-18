@@ -260,18 +260,49 @@
                             ? mensagem.User.Nome
                             : mensagem.User?.UserName ?? "Utilizador";
 
-                            <div class="chat-mensagem mb-3">
+                            <div class="chat-mensagem border-bottom pb-2 mb-3"
+                                 id="mensagem-@mensagem.Id">
+
                                 <div class="d-flex justify-content-between gap-3">
-                                    <strong>@nomeAutor</strong>
 
-                                    <small class="text-muted">
-                                        @mensagem.DataEnvio.ToString("dd/MM HH:mm")
-                                    </small>
+                                    <div class="flex-grow-1">
+
+                                        <div class="d-flex justify-content-between gap-3">
+                                            <strong>@nomeAutor</strong>
+
+                                            <small class="text-muted">
+                                                @mensagem.DataEnvio.ToString("dd/MM HH:mm")
+                                            </small>
+                                        </div>
+
+                                        <div class="mt-1 text-break">
+                                            @mensagem.Texto
+                                        </div>
+
+                                    </div>
+
+                                    @if (souCriador || User.IsInRole("Admin"))
+                                    {
+                                        <form asp-controller="Eventos"
+                                              asp-action="EliminarMensagem"
+                                              asp-route-id="@mensagem.Id"
+                                              method="post"
+                                              class="flex-shrink-0"
+                                              onsubmit="return confirm('Tens a certeza de que queres eliminar esta mensagem?');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm"
+                                                    title="Eliminar mensagem">
+                                                Eliminar
+                                            </button>
+
+                                        </form>
+                                    }
+
                                 </div>
 
-                                <div class="mt-1">
-                                    @mensagem.Texto
-                                </div>
                             </div>
                         }
                     }
@@ -353,7 +384,7 @@
         </a>
 
         <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-danger">
-            Apagar
+            Eliminar Evento
         </a>
     }
 
