@@ -93,11 +93,11 @@ namespace JoinIt.Controllers
 
             if (amizadeExistente != null)
             {
-                if (amizadeExistente.Estado == EstadoAmizade.Rejeitado)
+                if (amizadeExistente.Estado == EstadoPedido.Rejeitado)
                 {
                     amizadeExistente.PedidoPorId = userId;
                     amizadeExistente.PedidoAId = id;
-                    amizadeExistente.Estado = EstadoAmizade.Pendente;
+                    amizadeExistente.Estado = EstadoPedido.Pendente;
                     amizadeExistente.DataPedido = DateTime.Now;
 
                     _context.Notificacoes.Add(new Notificacao
@@ -133,7 +133,7 @@ namespace JoinIt.Controllers
             {
                 PedidoPorId = userId,
                 PedidoAId = id,
-                Estado = EstadoAmizade.Pendente,
+                Estado = EstadoPedido.Pendente,
                 DataPedido = DateTime.Now
             };
 
@@ -176,14 +176,14 @@ namespace JoinIt.Controllers
                 .FirstOrDefaultAsync(a =>
                     a.Id == id &&
                     a.PedidoAId == userId &&
-                    a.Estado == EstadoAmizade.Pendente);
+                    a.Estado == EstadoPedido.Pendente);
 
             if (amizade == null)
             {
                 return NotFound();
             }
 
-            amizade.Estado = EstadoAmizade.Rejeitado;
+            amizade.Estado = EstadoPedido.Rejeitado;
 
             await _context.SaveChangesAsync();
 
@@ -205,14 +205,14 @@ namespace JoinIt.Controllers
                 .FirstOrDefaultAsync(a =>
                     a.Id == id &&
                     a.PedidoAId == userId &&
-                    a.Estado == EstadoAmizade.Pendente);
+                    a.Estado == EstadoPedido.Pendente);
 
             if (amizade == null)
             {
                 return NotFound();
             }
 
-            amizade.Estado = EstadoAmizade.Aceite;
+            amizade.Estado = EstadoPedido.Aceite;
 
             var utilizadorAtual = await _userManager.GetUserAsync(User);
 
@@ -221,7 +221,7 @@ namespace JoinIt.Controllers
                 utilizadorAtual?.UserName ??
                 "Um utilizador";
 
-            amizade.Estado = EstadoAmizade.Aceite;
+            amizade.Estado = EstadoPedido.Aceite;
 
             _context.Notificacoes.Add(new Notificacao
             {
@@ -254,7 +254,7 @@ namespace JoinIt.Controllers
                 .FirstOrDefaultAsync(a =>
                     a.Id == id &&
                     a.PedidoPorId == userId &&
-                    a.Estado == EstadoAmizade.Pendente
+                    a.Estado == EstadoPedido.Pendente
                 );
 
             if (amizade == null)
@@ -282,7 +282,7 @@ namespace JoinIt.Controllers
             var amizade = await _context.Amizades
                 .FirstOrDefaultAsync(a =>
                     a.Id == id &&
-                    a.Estado == EstadoAmizade.Aceite &&
+                    a.Estado == EstadoPedido.Aceite &&
                     (
                         a.PedidoPorId == userId ||
                         a.PedidoAId == userId

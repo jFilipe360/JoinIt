@@ -62,14 +62,14 @@ namespace JoinIt.Controllers
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
                     c.UtilizadorId == userId &&
-                    c.Estado == EstadoConvite.Pendente);
+                    c.Estado == EstadoPedido.Pendente);
 
             if (convite == null)
             {
                 return NotFound();
             }
 
-            if (convite.Estado != EstadoConvite.Pendente)
+            if (convite.Estado != EstadoPedido.Pendente)
             {
                 return RedirectToAction(nameof(Index));
             }
@@ -109,7 +109,7 @@ namespace JoinIt.Controllers
                 _context.Participantes.Add(participante);
             }
 
-            convite.Estado = EstadoConvite.Aceite;
+            convite.Estado = EstadoPedido.Aceite;
 
             var utilizadorAtual = await _userManager.GetUserAsync(User);
 
@@ -158,14 +158,14 @@ namespace JoinIt.Controllers
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
                     c.UtilizadorId == userId &&
-                    c.Estado == EstadoConvite.Pendente);
+                    c.Estado == EstadoPedido.Pendente);
 
             if (convite == null)
             {
                 return NotFound();
             }
 
-            convite.Estado = EstadoConvite.Rejeitado;
+            convite.Estado = EstadoPedido.Rejeitado;
 
             await _context.SaveChangesAsync();
 

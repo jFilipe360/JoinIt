@@ -27,7 +27,7 @@ namespace JoinIt.Models
 
         // Estado do pedido de amizade (Pendente, Aceite, Recusado)
         [Required]
-        public EstadoAmizade Estado { get; set; }
+        public EstadoPedido Estado { get; set; }
 
         // Data do pedido de amizade
         [Required]

@@ -6,19 +6,19 @@
     var userId = ViewBag.UserId as string;
 
     var amigos = Model
-        .Where(a => a.Estado == JoinIt.Enums.EstadoAmizade.Aceite)
+        .Where(a => a.Estado == JoinIt.Enums.EstadoPedido.Aceite)
         .ToList();
 
     var pedidosRecebidos = Model
         .Where(a =>
             a.PedidoAId == userId &&
-            a.Estado == JoinIt.Enums.EstadoAmizade.Pendente)
+            a.Estado == JoinIt.Enums.EstadoPedido.Pendente)
         .ToList();
 
     var pedidosEnviados = Model
         .Where(a =>
             a.PedidoPorId == userId &&
-            a.Estado == JoinIt.Enums.EstadoAmizade.Pendente)
+            a.Estado == JoinIt.Enums.EstadoPedido.Pendente)
         .ToList();
 }
 

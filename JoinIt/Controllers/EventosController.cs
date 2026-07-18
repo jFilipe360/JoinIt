@@ -51,7 +51,7 @@ namespace JoinIt.Controllers
                     e.Participantes.Any(p => p.UserId == userId) ||
                     e.Convites.Any(c =>
                         c.UtilizadorId == userId &&
-                        c.Estado != EstadoConvite.Rejeitado));
+                        c.Estado != EstadoPedido.Rejeitado));
             }
 
             // Esconder eventos passados dos outros utilizadores
@@ -191,7 +191,7 @@ namespace JoinIt.Controllers
                     evento.Participantes.Any(p => p.UserId == userId) ||
                     evento.Convites.Any(c =>
                         c.UtilizadorId == userId &&
-                        c.Estado != EstadoConvite.Rejeitado);
+                        c.Estado != EstadoPedido.Rejeitado);
 
                 if (!temAcesso)
                 {
@@ -204,7 +204,7 @@ namespace JoinIt.Controllers
                 var amizadesAceites = await _context.Amizades
                     .AsNoTracking()
                     .Where(a =>
-                        a.Estado == EstadoAmizade.Aceite &&
+                        a.Estado == EstadoPedido.Aceite &&
                         (a.PedidoPorId == userId ||
                          a.PedidoAId == userId))
                     .ToListAsync();
@@ -221,7 +221,7 @@ namespace JoinIt.Controllers
                     .ToList();
 
                 var idsComConviteAtivo = evento.Convites
-                    .Where(c => c.Estado != EstadoConvite.Rejeitado)
+                    .Where(c => c.Estado != EstadoPedido.Rejeitado)
                     .Select(c => c.UtilizadorId)
                     .ToList();
 
@@ -533,7 +533,7 @@ namespace JoinIt.Controllers
                     .AnyAsync(c =>
                         c.EventoId == evento.Id &&
                         c.UtilizadorId == userId &&
-                        c.Estado == EstadoConvite.Aceite);
+                        c.Estado == EstadoPedido.Aceite);
 
                 if (!temConviteAceite)
                 {
@@ -664,7 +664,7 @@ namespace JoinIt.Controllers
 
             var saoAmigos = await _context.Amizades
                 .AnyAsync(a =>
-                    a.Estado == EstadoAmizade.Aceite &&
+                    a.Estado == EstadoPedido.Aceite &&
                     (
                         (a.PedidoPorId == userId &&
                             a.PedidoAId == utilizadorId)
@@ -704,7 +704,7 @@ namespace JoinIt.Controllers
                 {
                     EventoId = id,
                     UtilizadorId = utilizadorId,
-                    Estado = EstadoConvite.Pendente,
+                    Estado = EstadoPedido.Pendente,
                     DataConvite = DateTime.Now
                 };
 
@@ -712,9 +712,9 @@ namespace JoinIt.Controllers
 
                 conviteEnviado = true;
             }
-            else if (conviteExistente.Estado == EstadoConvite.Rejeitado)
+            else if (conviteExistente.Estado == EstadoPedido.Rejeitado)
             {
-                conviteExistente.Estado = EstadoConvite.Pendente;
+                conviteExistente.Estado = EstadoPedido.Pendente;
                 conviteExistente.DataConvite = DateTime.Now;
 
                 conviteEnviado = true;

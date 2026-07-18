@@ -20,7 +20,7 @@ namespace JoinIt.Models
         [ValidateNever]
         public ApplicationUser Utilizador { get; set; } = null!;
 
-        public EstadoConvite Estado { get; set; } = EstadoConvite.Pendente;
+        public EstadoPedido Estado { get; set; } = EstadoPedido.Pendente;
 
         public DateTime DataConvite { get; set; } = DateTime.Now;
     }

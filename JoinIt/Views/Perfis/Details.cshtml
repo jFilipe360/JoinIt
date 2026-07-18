@@ -73,7 +73,7 @@
                     </a>
                 }
                 else if (amizade == null ||
-                amizade.Estado == JoinIt.Enums.EstadoAmizade.Rejeitado)
+                amizade.Estado == JoinIt.Enums.EstadoPedido.Rejeitado)
                 {
                     <form asp-controller="Amizades"
                           asp-action="Enviar"
@@ -89,7 +89,7 @@
                         </button>
                     </form>
                 }
-                else if (amizade.Estado == JoinIt.Enums.EstadoAmizade.Pendente)
+                else if (amizade.Estado == JoinIt.Enums.EstadoPedido.Pendente)
                 {
                     if (amizade.PedidoPorId == utilizadorAtualId)
                     {
@@ -104,7 +104,7 @@
                         </button>
                     }
                 }
-                else if (amizade.Estado == JoinIt.Enums.EstadoAmizade.Aceite)
+                else if (amizade.Estado == JoinIt.Enums.EstadoPedido.Aceite)
                 {
                     <span class="badge bg-success p-2">
                         Amigos

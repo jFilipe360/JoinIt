@@ -4,15 +4,15 @@
     ViewData["Title"] = "Convites";
 
     var pendentes = Model
-        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Pendente)
+        .Where(c => c.Estado == JoinIt.Enums.EstadoPedido.Pendente)
         .ToList();
 
     var aceites = Model
-        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Aceite)
+        .Where(c => c.Estado == JoinIt.Enums.EstadoPedido.Aceite)
         .ToList();
 
     var rejeitados = Model
-        .Where(c => c.Estado == JoinIt.Enums.EstadoConvite.Rejeitado)
+        .Where(c => c.Estado == JoinIt.Enums.EstadoPedido.Rejeitado)
         .ToList();
 }
 
