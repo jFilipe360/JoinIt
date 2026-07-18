@@ -4,14 +4,12 @@
 
 <div class="mb-4">
     <h1 class="mb-1">Administração</h1>
-
     <p class="text-muted mb-0">
         Visão geral da atividade do JoinIt.
     </p>
 </div>
 
 <div class="row g-4 mb-5">
-
     <div class="col-12 col-md-6 col-xl-3">
         <div class="card shadow-sm h-100">
             <div class="card-body">
@@ -28,7 +26,6 @@
         <div class="card shadow-sm h-100">
             <div class="card-body">
                 <p class="text-muted mb-1">Eventos</p>
-
                 <h2 class="display-6 mb-0">
                     @ViewBag.TotalEventos
                 </h2>
@@ -40,7 +37,6 @@
         <div class="card shadow-sm h-100">
             <div class="card-body">
                 <p class="text-muted mb-1">Categorias</p>
-
                 <h2 class="display-6 mb-0">
                     @ViewBag.TotalCategorias
                 </h2>
@@ -52,108 +48,72 @@
         <div class="card shadow-sm h-100">
             <div class="card-body">
                 <p class="text-muted mb-1">Mensagens</p>
-
                 <h2 class="display-6 mb-0">
                     @ViewBag.TotalMensagens
                 </h2>
             </div>
         </div>
     </div>
-
 </div>
 
 <div class="row g-4 mb-5">
-
     <div class="col-12 col-md-6">
         <div class="card shadow-sm h-100">
             <div class="card-header">
                 Eventos por visibilidade
             </div>
-
             <div class="card-body">
-
                 <div class="d-flex justify-content-between mb-3">
                     <span>Eventos públicos</span>
-
                     <span class="badge bg-success">
                         @ViewBag.EventosPublicos
                     </span>
                 </div>
-
                 <div class="d-flex justify-content-between">
                     <span>Eventos privados</span>
-
                     <span class="badge bg-danger">
                         @ViewBag.EventosPrivados
                     </span>
                 </div>
-
             </div>
         </div>
     </div>
-
     <div class="col-12 col-md-6">
         <div class="card shadow-sm h-100">
             <div class="card-header">
                 Atividade social
             </div>
-
             <div class="card-body">
-
                 <div class="d-flex justify-content-between mb-3">
                     <span>Participações</span>
-
                     <span class="badge bg-primary">
                         @ViewBag.TotalParticipantes
                     </span>
                 </div>
-
                 <div class="d-flex justify-content-between mb-3">
                     <span>Amizades e pedidos</span>
-
                     <span class="badge bg-primary">
                         @ViewBag.TotalAmizades
                     </span>
                 </div>
-
                 <div class="d-flex justify-content-between">
                     <span>Convites para eventos</span>
-
                     <span class="badge bg-primary">
                         @ViewBag.TotalConvites
                     </span>
                 </div>
-
             </div>
         </div>
     </div>
-
 </div>
 
 <div class="card shadow-sm">
     <div class="card-header">
         Gestão
     </div>
-
     <div class="card-body d-flex gap-2 flex-wrap">
-
-        <a asp-controller="Categorias"
-           asp-action="Index"
-           class="btn btn-primary">
-            Gerir categorias
-        </a>
-
-        <a asp-controller="Eventos"
-           asp-action="Index"
-           class="btn btn-outline-primary">
-            Consultar eventos
-        </a>
-
-        <a href="/api/eventos"
-           class="btn btn-outline-secondary"
-           target="_blank">
-            Consultar API
-        </a>
-
+        <a asp-controller="Categorias" asp-action="Index" class="btn btn-primary">Gerir categorias</a>
+        <a asp-controller="Eventos" asp-action="Index" class="btn btn-outline-primary">Consultar eventos</a>
+        <a href="/api/eventos" class="btn btn-outline-secondary" target="_blank">Consultar API</a>
     </div>
 </div>

@@ -185,6 +185,7 @@
                 longitudeInput.value.replace(",", ".")
             );
 
+            // Verifica se já existem coordenadas, por exemplo após um erro de validação
             const temLocalizacaoInicial =
                 Number.isFinite(latitudeInicial) &&
                 Number.isFinite(longitudeInicial) &&
@@ -208,6 +209,7 @@
 
             let marker = null;
 
+            // Guarda as coordenadas nos campos escondidos do formulário
             function atualizarCoordenadas(latitude, longitude) {
 
                 const latitudeFormatada = latitude.toFixed(6).replace(".", ",");
@@ -224,6 +226,7 @@
                     longitude.toFixed(6);
             }
 
+            // Cria o marcador ou atualiza a sua posição
             function colocarMarcador(latitude, longitude) {
 
                 if (marker === null) {
@@ -260,6 +263,7 @@
                 );
             }
 
+            // Permite selecionar a localização ao clicar no mapa
             map.on("click", function (evento) {
                 colocarMarcador(
                     evento.latlng.lat,

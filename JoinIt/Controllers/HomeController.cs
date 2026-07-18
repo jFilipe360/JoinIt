@@ -19,6 +19,8 @@ namespace JoinIt.Controllers
             _context = context;
         }
 
+        // GET: /Home/Index
+        // Pagina inicial do site, que mostra os proximos eventos publicos que estao para acontecer
         public async Task<IActionResult> Index()
         {
             var agora = DateTime.Now;
@@ -38,17 +40,20 @@ namespace JoinIt.Controllers
             return View(proximosEventos);
         }
 
+        // Pagina "Sobre" do site, que mostra informacoes sobre o projeto
         public IActionResult Privacy()
         {
             return View();
         }
 
+        // Impede que a página de erro seja guardada em cache
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        // Apresenta uma página personalizada para erros HTTP
         [AllowAnonymous]
         public IActionResult ErroHttp(int code)
         {
@@ -58,6 +63,7 @@ namespace JoinIt.Controllers
             return View("StatusCode");
         }
 
+        // Apresenta a página personalizada de acesso negado
         [AllowAnonymous]
         public IActionResult AcessoNegado()
         {

@@ -21,6 +21,7 @@ namespace JoinIt.Controllers
             _environment = environment;
         }
 
+        // Lista todos os perfis de utilizadores, exceto o do utilizador atual.
         public async Task<IActionResult> Index(string? pesquisa)
         {
             var userId = _userManager.GetUserId(User);
@@ -30,6 +31,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // O utilizador atual não aparece na pesquisa de perfis
             var utilizadoresQuery = _context.Users
                 .AsNoTracking()
                 .Where(u => u.Id != userId);
@@ -53,6 +55,7 @@ namespace JoinIt.Controllers
             return View(utilizadores);
         }
 
+        // Detalhes do perfil de um utilizador específico, incluindo eventos criados e eventos em que participa.
         public async Task<IActionResult> Details(string? id)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -76,6 +79,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // Os eventos privados só são apresentados quando o utilizador atual é o criador ou já participa no evento
             var eventosVisiveis = _context.Eventos
                 .AsNoTracking()
                 .Include(e => e.Categoria)
@@ -103,6 +107,7 @@ namespace JoinIt.Controllers
                 .OrderBy(e => e.DataHora)
                 .ToListAsync();
 
+            // Procura uma relação de amizade em qualquer uma das direções
             var amizade = await _context.Amizades
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a =>
@@ -122,6 +127,7 @@ namespace JoinIt.Controllers
             return View(utilizador);
         }
 
+        // Permite ao utilizador editar o seu próprio perfil, incluindo nome e fotografia de perfil.
         [HttpGet]
         public async Task<IActionResult> Edit()
         {
@@ -148,10 +154,7 @@ namespace JoinIt.Controllers
 
             if (string.IsNullOrWhiteSpace(nome))
             {
-                ModelState.AddModelError(
-                    "Nome",
-                    "O nome é obrigatório."
-                );
+                ModelState.AddModelError("Nome","O nome é obrigatório.");
             }
 
             if (fotografia != null && fotografia.Length > 0)
@@ -160,10 +163,7 @@ namespace JoinIt.Controllers
 
                 if (fotografia.Length > tamanhoMaximo)
                 {
-                    ModelState.AddModelError(
-                        "fotografia",
-                        "A fotografia não pode ultrapassar 2 MB."
-                    );
+                    ModelState.AddModelError("fotografia","A fotografia não pode ultrapassar 2 MB.");
                 }
 
                 var extensao = Path
@@ -172,26 +172,23 @@ namespace JoinIt.Controllers
 
                 var extensoesPermitidas = new[]
                 {
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".webp"
-        };
+                    ".jpg",
+                    ".jpeg",
+                    ".png",
+                    ".webp"
+                };
 
                 var tiposPermitidos = new[]
                 {
-            "image/jpeg",
-            "image/png",
-            "image/webp"
-        };
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp"
+                };
 
-                if (!extensoesPermitidas.Contains(extensao) ||
-                    !tiposPermitidos.Contains(fotografia.ContentType))
+                // Validação básica da extensão e do tipo do ficheiro enviado
+                if (!extensoesPermitidas.Contains(extensao) || !tiposPermitidos.Contains(fotografia.ContentType))
                 {
-                    ModelState.AddModelError(
-                        "fotografia",
-                        "Seleciona uma imagem JPG, PNG ou WebP."
-                    );
+                    ModelState.AddModelError("fotografia","Seleciona uma imagem JPG, PNG ou WebP.");
                 }
             }
 
@@ -216,34 +213,22 @@ namespace JoinIt.Controllers
                     .GetExtension(fotografia.FileName)
                     .ToLowerInvariant();
 
+                // O nome aleatório evita conflitos entre ficheiros enviados por utilizadores diferentes
                 var nomeFicheiro = $"{Guid.NewGuid()}{extensao}";
 
-                var caminhoFisico = Path.Combine(
-                    pastaFotografias,
-                    nomeFicheiro
-                );
+                var caminhoFisico = Path.Combine(pastaFotografias,nomeFicheiro);
 
-                await using (var stream = new FileStream(
-                    caminhoFisico,
-                    FileMode.Create))
+                await using (var stream = new FileStream(caminhoFisico,FileMode.Create))
                 {
                     await fotografia.CopyToAsync(stream);
                 }
 
                 // Apagar a fotografia local anterior, quando existir.
-                if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil) &&
-                    utilizador.FotoPerfil.StartsWith(
-                        "/uploads/perfis/",
-                        StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil) && utilizador.FotoPerfil.StartsWith("/uploads/perfis/",StringComparison.OrdinalIgnoreCase))
                 {
-                    var nomeFicheiroAntigo = Path.GetFileName(
-                        utilizador.FotoPerfil
-                    );
+                    var nomeFicheiroAntigo = Path.GetFileName(utilizador.FotoPerfil);
 
-                    var caminhoAntigo = Path.Combine(
-                        pastaFotografias,
-                        nomeFicheiroAntigo
-                    );
+                    var caminhoAntigo = Path.Combine(pastaFotografias,nomeFicheiroAntigo);
 
                     if (System.IO.File.Exists(caminhoAntigo))
                     {
@@ -280,8 +265,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(MeuPerfil));
         }
 
-
-
+        // Redireciona para a página de detalhes do perfil do utilizador atual.
         public IActionResult MeuPerfil()
         {
             var userId = _userManager.GetUserId(User);

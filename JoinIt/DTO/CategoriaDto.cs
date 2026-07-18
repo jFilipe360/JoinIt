@@ -1,5 +1,6 @@
 ﻿namespace JoinIt.DTOs
 {
+    // Classe DTO (Data Transfer Object) para representar uma categoria de eventos.
     public class CategoriaDto
     {
         public int Id { get; set; }

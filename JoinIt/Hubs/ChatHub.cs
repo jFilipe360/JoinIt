@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JoinIt.Hubs
 {
+    // Apenas utilizadores autenticados podem utilizar o chat
     [Authorize]
     public class ChatHub : Hub
     {
@@ -19,31 +20,25 @@ namespace JoinIt.Hubs
             _userManager = userManager;
         }
 
+        // Método para entrar no chat de um evento
         public async Task EntrarNoEvento(int eventoId)
         {
             var userId = ObterUserId();
 
-            var podeAceder = await PodeAcederAoChat(
-                eventoId,
-                userId
-            );
+            // Confirma que o utilizador é o criador ou participante do evento
+            var podeAceder = await PodeAcederAoChat(eventoId,userId);
 
             if (!podeAceder)
             {
-                throw new HubException(
-                    "Não tens autorização para aceder ao chat deste evento."
-                );
+                throw new HubException("Não tens autorização para aceder ao chat deste evento.");
             }
 
-            await Groups.AddToGroupAsync(
-                Context.ConnectionId,
-                ObterNomeGrupo(eventoId)
-            );
+            // Cada evento possui um grupo SignalR próprio
+            await Groups.AddToGroupAsync(Context.ConnectionId,ObterNomeGrupo(eventoId));
         }
 
-        public async Task EnviarMensagem(
-            int eventoId,
-            string texto)
+        // Enviar mensagem para o chat do evento
+        public async Task EnviarMensagem(int eventoId,string texto)
         {
             var userId = ObterUserId();
 
@@ -78,11 +73,10 @@ namespace JoinIt.Hubs
 
             if (utilizador == null)
             {
-                throw new HubException(
-                    "Não foi possível identificar o utilizador."
-                );
+                throw new HubException("Não foi possível identificar o utilizador.");
             }
 
+            // Guarda a mensagem antes de a enviar aos clientes ligados
             var mensagem = new Mensagem
             {
                 EventoId = eventoId,
@@ -99,6 +93,7 @@ namespace JoinIt.Hubs
                     ? utilizador.Nome
                     : utilizador.UserName ?? "Utilizador";
 
+            // Envia a mensagem em tempo real a todos os membros do evento
             await Clients
                 .Group(ObterNomeGrupo(eventoId))
                 .SendAsync(
@@ -114,23 +109,21 @@ namespace JoinIt.Hubs
                 );
         }
 
+        // Método auxiliar para obter o ID do utilizador autenticado
         private string ObterUserId()
         {
             var userId = _userManager.GetUserId(Context.User);
 
             if (string.IsNullOrWhiteSpace(userId))
             {
-                throw new HubException(
-                    "É necessário iniciar sessão."
-                );
+                throw new HubException("É necessário iniciar sessão.");
             }
 
             return userId;
         }
 
-        private async Task<bool> PodeAcederAoChat(
-            int eventoId,
-            string userId)
+        // Verifica se o utilizador pertence ao evento
+        private async Task<bool> PodeAcederAoChat(int eventoId,string userId)
         {
             return await _context.Eventos
                 .AsNoTracking()
@@ -145,6 +138,7 @@ namespace JoinIt.Hubs
                 );
         }
 
+        // Gera um nome único para o grupo de cada evento
         private static string ObterNomeGrupo(int eventoId)
         {
             return $"evento-{eventoId}";

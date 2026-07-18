@@ -22,6 +22,7 @@ namespace JoinIt.Controllers
             _userManager = userManager;
         }
 
+        // Lista de eventos com filtros e ordenação
         // GET: EVENTOS
         [AllowAnonymous]
         public async Task<IActionResult> Index(string? pesquisa, int? categoriaId, string? tipo, bool apenasFuturos = false, bool participo = false, string ordem = "data")
@@ -110,14 +111,11 @@ namespace JoinIt.Controllers
             //Ordenação dos eventos
             query = ordem switch
             {
-                "data_desc" => query
-                    .OrderByDescending(e => e.DataHora),
+                "data_desc" => query.OrderByDescending(e => e.DataHora),
 
-                "titulo" => query
-                    .OrderBy(e => e.Titulo),
+                "titulo" => query.OrderBy(e => e.Titulo),
 
-                "titulo_desc" => query
-                    .OrderByDescending(e => e.Titulo),
+                "titulo_desc" => query.OrderByDescending(e => e.Titulo),
 
                 _ => query.OrderBy(e => e.DataHora)
             };
@@ -134,6 +132,7 @@ namespace JoinIt.Controllers
                 categoriaId
             );
 
+            // Mantém os filtros selecionados depois de submeter o formulário
             ViewData["Pesquisa"] = pesquisa;
             ViewData["CategoriaId"] = categoriaId;
             ViewData["Tipo"] = tipo;
@@ -144,6 +143,7 @@ namespace JoinIt.Controllers
             return View(eventos);
         }
 
+        // Detalhes de um evento específico, incluindo participantes, convites e mensagens
         // GET: EVENTOS/Details/5
         [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
@@ -179,6 +179,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // Eventos privados só podem ser consultados pelo criador, participantes ou utilizadores com um convite ativo
             if (evento.IsPrivado)
             {
                 if (userId == null)
@@ -199,6 +200,7 @@ namespace JoinIt.Controllers
                 }
             }
 
+            // O criador de um evento privado pode convidar amigos que ainda não participem nem tenham convite ativo
             if (evento.IsPrivado && evento.CriadorId == userId)
             {
                 var amizadesAceites = await _context.Amizades
@@ -237,6 +239,7 @@ namespace JoinIt.Controllers
                 ViewBag.AmigosDisponiveis = amigosDisponiveis;
             }
 
+            // O chat está disponível apenas para o organizador e para os participantes do evento
             ViewBag.PodeUsarChat =
                 userId != null &&
                 (
@@ -247,6 +250,7 @@ namespace JoinIt.Controllers
             return View(evento);
         }
 
+        // Apresentação do formulário de criação de um novo evento
         // GET: EVENTOS/Create
         public IActionResult Create()
         {
@@ -254,6 +258,7 @@ namespace JoinIt.Controllers
             return View();
         }
 
+        // Criação de um novo evento, garantindo que os dados fornecidos são válidos e que o utilizador autenticado é o criador do evento
         // POST: EVENTOS/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -261,6 +266,7 @@ namespace JoinIt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Titulo,Descricao,DataHora,Latitude,Longitude,IsPrivado,NumMaxParticipantes,CategoriaId")] Evento evento)
         {
+            // O criador é definido pelo utilizador autenticado, não pelos dados enviados pelo formulário
             ModelState.Remove(nameof(Evento.CriadorId));
 
             if (evento.Latitude == 0 && evento.Longitude == 0)
@@ -304,6 +310,7 @@ namespace JoinIt.Controllers
             _context.Eventos.Add(evento);
             await _context.SaveChangesAsync();
 
+            // O criador também fica registado como participante organizador
             _context.Participantes.Add(new Participante
             {
                 EventoId = evento.Id,
@@ -319,6 +326,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Fornece o formulário de edição de um evento existente
         // GET: EVENTOS/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -335,11 +343,10 @@ namespace JoinIt.Controllers
 
             var userId = _userManager.GetUserId(User);
 
-            if (userId == null)
-                return Challenge();
+            if (userId == null) return Challenge();
 
-            if (evento.CriadorId != userId)
-                return Forbid();
+            // Apenas o criador pode editar o evento
+            if (evento.CriadorId != userId) return Forbid();
 
 
             ViewData["CategoriaId"] = new SelectList(_context.Categorias, "Id", "Nome", evento.CategoriaId);
@@ -347,6 +354,7 @@ namespace JoinIt.Controllers
             return View(evento);
         }
 
+        // Editar um evento existente, garantindo que apenas o criador pode editar e validando os dados fornecidos
         // POST: EVENTOS/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -359,8 +367,7 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
-            var eventoOriginal = await _context.Eventos
-                .FirstOrDefaultAsync(e => e.Id == id);
+            var eventoOriginal = await _context.Eventos.FirstOrDefaultAsync(e => e.Id == id);
 
             if (eventoOriginal == null)
             {
@@ -383,18 +390,15 @@ namespace JoinIt.Controllers
 
             if (evento.Latitude == 0 && evento.Longitude == 0)
             {
-                ModelState.AddModelError(
-                    nameof(Evento.Latitude),
-                    "Seleciona uma localização no mapa."
-                );
+                ModelState.AddModelError(nameof(Evento.Latitude),"Seleciona uma localização no mapa.");
             }
 
             var numeroParticipantes = await _context.Participantes.CountAsync(p => p.EventoId == evento.Id);
 
+            // O limite não pode ficar abaixo do número de participantes já inscritos
             if (evento.NumMaxParticipantes < numeroParticipantes)
             {
-                ModelState.AddModelError(
-                    nameof(Evento.NumMaxParticipantes),
+                ModelState.AddModelError(nameof(Evento.NumMaxParticipantes),
                     $"O limite não pode ser inferior aos {numeroParticipantes} participantes atuais."
                 );
             }
@@ -413,6 +417,7 @@ namespace JoinIt.Controllers
                 return View(evento);
             }
 
+            // Atualiza apenas as propriedades permitidas
             eventoOriginal.Titulo = evento.Titulo;
             eventoOriginal.Descricao = evento.Descricao;
             eventoOriginal.DataHora = evento.DataHora;
@@ -441,6 +446,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Details), new { id = evento.Id });
         }
 
+        // Excluir um evento existente, garantindo que apenas o criador pode excluir
         // GET: EVENTOS/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -470,6 +476,7 @@ namespace JoinIt.Controllers
             return View(evento);
         }
 
+        // Excluir um evento existente, garantindo que apenas o criador pode excluir
         // POST: EVENTOS/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -477,16 +484,13 @@ namespace JoinIt.Controllers
         {
             var evento = await _context.Eventos.FindAsync(id);
 
-            if (evento == null)
-                return NotFound();
+            if (evento == null) return NotFound();
 
             var userId = _userManager.GetUserId(User);
 
-            if (userId == null)
-                return Challenge();
+            if (userId == null) return Challenge();
 
-            if (evento.CriadorId != userId)
-                return Forbid();
+            if (evento.CriadorId != userId) return Forbid();
 
             _context.Eventos.Remove(evento);
 
@@ -497,36 +501,34 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Verifica se um evento existe no banco de dados com base no ID fornecido
         private bool EventoExists(int? id)
         {
             return _context.Eventos.Any(e => e.Id == id);
         }
 
+        // Permite que um utilizador participe num evento, verificando se o evento está ativo, se o utilizador tem acesso e se ainda há vagas disponíveis
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Participar(int id)
         {
             var userId = _userManager.GetUserId(User);
 
-            if (userId == null)
-                return Challenge();
+            if (userId == null) return Challenge();
 
             var evento = await _context.Eventos.FindAsync(id);
 
             if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
             {
-                TempData["Erro"] =
-                    "Já não é possível participar neste evento.";
+                TempData["Erro"] = "Já não é possível participar neste evento.";
 
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
-                );
+                return RedirectToAction(nameof(Details),new { id });
             }
 
-            if (evento == null)
-                return NotFound();
+            // A verificação de null tem de acontecer antes de consultar qualquer propriedade do evento
+            if (evento == null) return NotFound();
 
+            // Num evento privado é necessário ter um convite aceite
             if (evento.IsPrivado)
             {
                 var temConviteAceite = await _context.ConvitesEventos
@@ -574,24 +576,21 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // Permite que um utilizador saia de um evento, garantindo que o organizador não possa sair do próprio evento
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Sair(int id)
         {
             var userId = _userManager.GetUserId(User);
 
-            if (userId == null)
-                return Challenge();
+            if (userId == null) return Challenge();
 
-            var participante = await _context.Participantes
-                .FirstOrDefaultAsync(p => p.EventoId == id && p.UserId == userId);
+            var participante = await _context.Participantes.FirstOrDefaultAsync(p => p.EventoId == id && p.UserId == userId);
 
-            if (participante == null)
-                return RedirectToAction(nameof(Details), new { id });
+            if (participante == null) return RedirectToAction(nameof(Details), new { id });
 
             // O organizador não pode sair do próprio evento
-            if (participante.IsOrganizador)
-                return RedirectToAction(nameof(Details), new { id });
+            if (participante.IsOrganizador) return RedirectToAction(nameof(Details), new { id });
 
             _context.Participantes.Remove(participante);
 
@@ -602,6 +601,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
 
+        // Permite que o criador de um evento privado convide amigos para participar, garantindo que apenas amigos aceites possam ser convidados e que não haja convites duplicados
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Convidar(int id, string utilizadorId)
@@ -615,10 +615,7 @@ namespace JoinIt.Controllers
 
             if (string.IsNullOrWhiteSpace(utilizadorId))
             {
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
-                );
+                return RedirectToAction(nameof(Details),new { id });
             }
 
             var evento = await _context.Eventos
@@ -627,20 +624,19 @@ namespace JoinIt.Controllers
 
             if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
             {
-                TempData["Erro"] =
-                    "Não é possível enviar convites para este evento.";
+                TempData["Erro"] = "Não é possível enviar convites para este evento.";
 
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
+                return RedirectToAction( nameof(Details), new { id }
                 );
             }
 
+            // A verificação de existência deve ser feita antes de consultar o estado do evento
             if (evento == null)
             {
                 return NotFound();
             }
 
+            // Apenas o criador pode enviar convites
             if (evento.CriadorId != userId)
             {
                 return Forbid();
@@ -648,38 +644,29 @@ namespace JoinIt.Controllers
 
             if (!evento.IsPrivado)
             {
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
-                );
+                return RedirectToAction(nameof(Details),new { id });
             }
 
             if (utilizadorId == userId)
             {
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
-                );
+                return RedirectToAction(nameof(Details),new { id });
             }
 
+            // Só podem ser convidados utilizadores com uma amizade aceite
             var saoAmigos = await _context.Amizades
                 .AnyAsync(a =>
                     a.Estado == EstadoPedido.Aceite &&
-                    (
-                        (a.PedidoPorId == userId &&
-                            a.PedidoAId == utilizadorId)
+                    ((a.PedidoPorId == userId && a.PedidoAId == utilizadorId)
                         ||
-                        (a.PedidoPorId == utilizadorId &&
-                            a.PedidoAId == userId)
-                    ));
+                        (a.PedidoPorId == utilizadorId && a.PedidoAId == userId))
+                );
 
             if (!saoAmigos)
             {
                 return Forbid();
             }
 
-            var jaParticipa = evento.Participantes
-                .Any(p => p.UserId == utilizadorId);
+            var jaParticipa = evento.Participantes.Any(p => p.UserId == utilizadorId);
 
             if (jaParticipa)
             {
@@ -714,6 +701,7 @@ namespace JoinIt.Controllers
             }
             else if (conviteExistente.Estado == EstadoPedido.Rejeitado)
             {
+                // Um convite anteriormente rejeitado pode ser reenviado
                 conviteExistente.Estado = EstadoPedido.Pendente;
                 conviteExistente.DataConvite = DateTime.Now;
 
@@ -748,6 +736,7 @@ namespace JoinIt.Controllers
             );
         }
 
+        // Apresenta no mapa apenas eventos públicos com coordenadas geográficas válidas
         [AllowAnonymous]
         public async Task<IActionResult> Mapa()
         {
@@ -767,6 +756,7 @@ namespace JoinIt.Controllers
             return View(eventos);
         }
 
+        // Altera o estado do evento e notifica os participantes
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AlterarEstado(int id, EstadoEvento novoEstado)
@@ -778,23 +768,22 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
-            var evento = await _context.Eventos
-                .FirstOrDefaultAsync(e => e.Id == id);
+            var evento = await _context.Eventos.FirstOrDefaultAsync(e => e.Id == id);
 
             if (evento == null)
             {
                 return NotFound();
             }
 
-            var podeGerir =
-                evento.CriadorId == userId ||
-                User.IsInRole("Admin");
+            // O estado pode ser gerido pelo criador ou por um Admin
+            var podeGerir = evento.CriadorId == userId || User.IsInRole("Admin");
 
             if (!podeGerir)
             {
-                return Forbid();
+                return Forbid();    
             }
 
+            // Restringe as mudanças aos percursos permitidos
             var transicaoValida = novoEstado switch
             {
                 EstadoEvento.ADecorrer =>
@@ -812,17 +801,15 @@ namespace JoinIt.Controllers
 
             if (!transicaoValida)
             {
-                TempData["Erro"] =
-                    "Não é possível alterar o evento para esse estado.";
+                TempData["Erro"] = "Não é possível alterar o evento para esse estado.";
 
-                return RedirectToAction(
-                    nameof(Details),
-                    new { id }
-                );
+                return RedirectToAction(nameof(Details),new { id });
             }
 
+            // Atualiza o estado do evento
             evento.Estado = novoEstado;
 
+            // Define a mensagem que será enviada aos participantes
             var mensagemNotificacao = novoEstado switch
             {
                 EstadoEvento.ADecorrer =>
@@ -837,6 +824,7 @@ namespace JoinIt.Controllers
                 _ => $"O estado do evento \"{evento.Titulo}\" foi atualizado."
             };
 
+            // Obtém os participantes que devem receber a notificação, excluindo o utilizador que alterou o estado
             var destinatarios = await _context.Participantes
                 .Where(p =>
                     p.EventoId == evento.Id &&
@@ -845,12 +833,14 @@ namespace JoinIt.Controllers
                 .Distinct()
                 .ToListAsync();
 
+            // Cria o endereço para a página de detalhes do evento
             var linkEvento = Url.Action(
                 "Details",
                 "Eventos",
                 new { id = evento.Id }
             );
 
+            // Cria uma notificação para cada participante
             var notificacoes = destinatarios.Select(utilizadorId =>
                 new Notificacao
                 {
@@ -879,10 +869,7 @@ namespace JoinIt.Controllers
                 _ => "Estado atualizado."
             };
 
-            return RedirectToAction(
-                nameof(Details),
-                new { id }
-            );
+            return RedirectToAction(nameof(Details),new { id });
         }
 
         [HttpPost]
@@ -896,6 +883,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // Procura a mensagem e carrega o respetivo evento para verificar quem é o organizador
             var mensagem = await _context.Mensagens
                 .Include(m => m.Evento)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -905,15 +893,15 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
-            var podeEliminar =
-                mensagem.Evento.CriadorId == userId ||
-                User.IsInRole("Admin");
+            // Apenas o criador do evento ou um administrador pode eliminar mensagens do chat
+            var podeEliminar = mensagem.Evento.CriadorId == userId || User.IsInRole("Admin");
 
             if (!podeEliminar)
             {
                 return Forbid();
             }
 
+            // Guarda o ID do evento antes de remover a mensagem, para regressar depois à página de detalhes   
             var eventoId = mensagem.EventoId;
 
             _context.Mensagens.Remove(mensagem);
@@ -921,10 +909,7 @@ namespace JoinIt.Controllers
 
             TempData["Sucesso"] = "Mensagem eliminada com sucesso.";
 
-            return RedirectToAction(
-                nameof(Details),
-                new { id = eventoId }
-            );
+            return RedirectToAction(nameof(Details),new { id = eventoId });
         }
     }
 }

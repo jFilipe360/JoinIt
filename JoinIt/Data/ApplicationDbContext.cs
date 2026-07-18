@@ -12,6 +12,7 @@ namespace JoinIt.Data
             : base(options)
         {
         }
+        //Deinir as DbSets para cada entidade do modelo
         public DbSet<Evento> Eventos { get; set; }
 
         public DbSet<Categoria> Categorias { get; set; }

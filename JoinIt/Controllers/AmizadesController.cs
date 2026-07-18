@@ -20,6 +20,7 @@ namespace JoinIt.Controllers
             _userManager = userManager;
         }
 
+        // Apresenta os pedidos e amizades do utilizador autenticado. 
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
@@ -31,20 +32,23 @@ namespace JoinIt.Controllers
 
             var amizades = await _context.Amizades
                 .AsNoTracking()
+                // Carrega os dados dos dois utilizadores envolvidos 
                 .Include(a => a.PedidoPor)
                 .Include(a => a.PedidoA)
+                // Obtém pedidos enviados e recebidos pelo utilizador atual
                 .Where(a =>
                     a.PedidoPorId == userId ||
                     a.PedidoAId == userId)
                 .OrderByDescending(a => a.DataPedido)
                 .ToListAsync();
 
+            // Permite à view identificar qual dos utilizadores é o atual
             ViewBag.UserId = userId;
 
             return View(amizades);
         }
 
-
+        //Enviar um pedido de amizade para outro utilizador
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Enviar(string id)
@@ -61,13 +65,10 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
+            // Impede que um utilizador envie um pedido a si próprio
             if (id == userId)
             {
-                return RedirectToAction(
-                    "Details",
-                    "Perfis",
-                    new { id }
-                );
+                return RedirectToAction("Details","Perfis",new { id });
             }
 
             var destinatarioExiste = await _context.Users
@@ -85,6 +86,7 @@ namespace JoinIt.Controllers
                 utilizadorAtual?.UserName ??
                 "Um utilizador";
 
+            // Procura uma relação existente em qualquer uma das direções
             var amizadeExistente = await _context.Amizades
                 .FirstOrDefaultAsync(a =>
                     (a.PedidoPorId == userId && a.PedidoAId == id) ||
@@ -93,6 +95,7 @@ namespace JoinIt.Controllers
 
             if (amizadeExistente != null)
             {
+                // Um pedido anteriormente rejeitado pode ser enviado novamente
                 if (amizadeExistente.Estado == EstadoPedido.Rejeitado)
                 {
                     amizadeExistente.PedidoPorId = userId;
@@ -104,8 +107,7 @@ namespace JoinIt.Controllers
                     {
                         // O destinatário recebe a notificação
                         UtilizadorId = id,
-                        Mensagem =
-                            $"{nomeUtilizador} enviou-te um pedido de amizade.",
+                        Mensagem = $"{nomeUtilizador} enviou-te um pedido de amizade.",
                         Link = Url.Action("Index", "Amizades"),
                         Lida = false,
                         CriadaEm = DateTime.Now
@@ -122,13 +124,10 @@ namespace JoinIt.Controllers
                         "Já existe um pedido ou amizade entre estes utilizadores.";
                 }
 
-                return RedirectToAction(
-                    "Details",
-                    "Perfis",
-                    new { id }
-                );
+                return RedirectToAction("Details","Perfis",new { id });
             }
 
+            // Cria um novo pedido de amizade pendente
             var amizade = new Amizade
             {
                 PedidoPorId = userId,
@@ -139,12 +138,12 @@ namespace JoinIt.Controllers
 
             _context.Amizades.Add(amizade);
 
+            // Notifica o destinatário do novo pedido
             _context.Notificacoes.Add(new Notificacao
             {
                 // Tem de ser 'id', não 'userId'
                 UtilizadorId = id,
-                Mensagem =
-                    $"{nomeUtilizador} enviou-te um pedido de amizade.",
+                Mensagem = $"{nomeUtilizador} enviou-te um pedido de amizade.",
                 Link = Url.Action("Index", "Amizades"),
                 Lida = false,
                 CriadaEm = DateTime.Now
@@ -154,13 +153,10 @@ namespace JoinIt.Controllers
 
             TempData["Sucesso"] = "Pedido de amizade enviado.";
 
-            return RedirectToAction(
-                "Details",
-                "Perfis",
-                new { id }
-            );
+            return RedirectToAction("Details","Perfis",new { id });
         }
 
+        // Rejeitar um pedido de amizade recebido
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Rejeitar(int id)
@@ -190,6 +186,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Aceitar um pedido de amizade recebido
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Aceitar(int id)
@@ -221,8 +218,7 @@ namespace JoinIt.Controllers
                 utilizadorAtual?.UserName ??
                 "Um utilizador";
 
-            amizade.Estado = EstadoPedido.Aceite;
-
+            // Informa o remetente de que o pedido foi aceite
             _context.Notificacoes.Add(new Notificacao
             {
                 UtilizadorId = amizade.PedidoPorId,
@@ -239,6 +235,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Permite ao remetente cancelar um pedido ainda pendente
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelarPedido(int id)
@@ -268,6 +265,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Remove uma amizade aceite, independentemente de quem enviou originalmente o pedido
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoverAmigo(int id)

@@ -53,11 +53,13 @@ else
 
                 const eventos = @Html.Raw(eventosJson);
 
+                // Inicializa o mapa centrado em Portugal
                 const mapa = L.map("mapa-eventos").setView(
                     [39.5, -8.0],
                     7
                 );
 
+                // Adiciona ao mapa a camada disponibilizada pelo OpenStreetMap
                 L.tileLayer(
                     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                     {
@@ -69,6 +71,7 @@ else
 
                 const marcadores = [];
 
+                // Cria um marcador e uma janela de informação para cada evento
                 eventos.forEach(function (evento) {
 
                     const marcador = L.marker([
@@ -111,6 +114,7 @@ else
                     marcadores.push(marcador);
                 });
 
+                // Ajusta automaticamente o mapa à localização dos marcadores
                 if (marcadores.length === 1) {
                     mapa.setView(
                         marcadores[0].getLatLng(),

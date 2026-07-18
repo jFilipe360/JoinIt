@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace JoinIt.Enums
 {
+    //Lista de estados possíveis para um evento
     public enum EstadoEvento
     {
         [Display(Name = "Para Breve")]

@@ -25,24 +25,14 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="mb-1">Amigos</h1>
-
-        <p class="text-muted mb-0">
-            Gere os teus amigos e pedidos de amizade.
-        </p>
+        <p class="text-muted mb-0">Gere os teus amigos e pedidos de amizade.</p>
     </div>
-
-    <a asp-controller="Perfis"
-       asp-action="Index"
-       class="btn btn-primary">
-        Encontrar utilizadores
-    </a>
+    <a asp-controller="Perfis" asp-action="Index" class="btn btn-primary">Encontrar utilizadores</a>
 </div>
 
 <section class="mb-5">
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 mb-0">Pedidos recebidos</h2>
-
         <span class="badge bg-warning text-dark">
             @pedidosRecebidos.Count
         </span>
@@ -64,74 +54,40 @@
                 <div class="col-12 col-md-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
-
                             <h3 class="h5 mb-1">
                                 @utilizador.Nome
                             </h3>
-
                             <p class="text-muted">
                                 @utilizador.UserName
                             </p>
-
                             <div class="d-flex gap-2 flex-wrap">
-
-                                <a asp-controller="Perfis"
-                                   asp-action="Details"
-                                   asp-route-id="@utilizador.Id"
-                                   class="btn btn-outline-primary btn-sm">
-                                    Ver perfil
-                                </a>
-
-                                <form asp-action="Aceitar"
-                                      asp-route-id="@amizade.Id"
-                                      method="post">
-
+                                <a asp-controller="Perfis" asp-action="Details" asp-route-id="@utilizador.Id" class="btn btn-outline-primary btn-sm">Ver perfil</a>
+                                <form asp-action="Aceitar" asp-route-id="@amizade.Id" method="post"> 
                                     @Html.AntiForgeryToken()
-
-                                    <button type="submit"
-                                            class="btn btn-success btn-sm">
-                                        Aceitar
-                                    </button>
+                                    <button type="submit" class="btn btn-success btn-sm"> Aceitar</button>
                                 </form>
-
-                                <form asp-action="Rejeitar"
-                                      asp-route-id="@amizade.Id"
-                                      method="post">
-
+                                <form asp-action="Rejeitar" asp-route-id="@amizade.Id" method="post">
                                     @Html.AntiForgeryToken()
-
-                                    <button type="submit"
-                                            class="btn btn-danger btn-sm">
-                                        Rejeitar
-                                    </button>
+                                    <button type="submit" class="btn btn-danger btn-sm">Rejeitar</button>
                                 </form>
-
                             </div>
-
                         </div>
                     </div>
                 </div>
             }
         </div>
     }
-
 </section>
 
 <section class="mb-5">
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 mb-0">Os meus amigos</h2>
-
-        <span class="badge bg-success">
-            @amigos.Count
-        </span>
+        <span class="badge bg-success">@amigos.Count</span>
     </div>
 
     @if (!amigos.Any())
     {
-        <div class="alert alert-light border">
-            Ainda não tens amigos adicionados.
-        </div>
+        <div class="alert alert-light border">Ainda não tens amigos adicionados.</div>
     }
     else
     {
@@ -145,9 +101,7 @@
                 <div class="col-12 col-md-6 col-lg-4">
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
-
                             <div class="d-flex gap-3 align-items-center">
-
                                 <div class="flex-shrink-0">
 
                                     @if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil))
@@ -175,59 +129,31 @@
                                             @inicial
                                         </div>
                                     }
-
                                 </div>
-
                                 <div class="flex-grow-1">
-
-                                    <h3 class="h5 mb-1">
-                                        @utilizador.Nome
-                                    </h3>
-
-                                    <p class="text-muted mb-3">
-                                        @utilizador.UserName
-                                    </p>
-
+                                    <h3 class="h5 mb-1">@utilizador.Nome</h3>
+                                    <p class="text-muted mb-3">@utilizador.UserName</p>
                                     <div class="d-flex gap-2 flex-wrap">
+                                        <a asp-controller="Perfis" asp-action="Details" asp-route-id="@utilizador.Id" class="btn btn-primary btn-sm">Ver perfil</a>
 
-                                        <a asp-controller="Perfis"
-                                           asp-action="Details"
-                                           asp-route-id="@utilizador.Id"
-                                           class="btn btn-primary btn-sm">
-                                            Ver perfil
-                                        </a>
-
-                                        <form asp-action="RemoverAmigo"
-                                              asp-route-id="@amizade.Id"
-                                              method="post"
-                                              onsubmit="return confirm('Tens a certeza de que queres remover este amigo?');">
+                                        <form asp-action="RemoverAmigo" asp-route-id="@amizade.Id" method="post" onsubmit="return confirm('Tens a certeza de que queres remover este amigo?');">
 
                                             @Html.AntiForgeryToken()
 
-                                            <button type="submit"
-                                                    class="btn btn-outline-danger btn-sm">
-                                                Remover amigo
-                                            </button>
-
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Remover amigo</button>
                                         </form>
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         </div>
                     </div>
                 </div>
             }
         </div>
     }
-
 </section>
 
 <section>
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 mb-0">Pedidos enviados</h2>
 

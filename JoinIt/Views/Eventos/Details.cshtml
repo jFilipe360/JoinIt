@@ -479,6 +479,7 @@
 
             const titulo = mapElement.dataset.titulo;
 
+            // Impede a criação do mapa quando as coordenadas são inválidas
             if (!Number.isFinite(latitude) ||
                 !Number.isFinite(longitude)) {
 
@@ -490,6 +491,7 @@
                 return;
             }
 
+            // Inicializa o mapa na localização do evento
             const map = L.map("map", {
                 scrollWheelZoom: false
             }).setView(
@@ -506,6 +508,7 @@
                 }
             ).addTo(map);
 
+            // Apresenta um marcador com o título do evento
             L.marker([latitude, longitude])
                 .addTo(map)
                 .bindPopup(titulo)
@@ -540,6 +543,7 @@
                 const erroElement =
                     document.getElementById("chat-erro");
 
+                // Configura a ligação ao Hub e ativa a reconexão automática
                 const connection =
                     new signalR.HubConnectionBuilder()
                         .withUrl("/chatHub")
@@ -556,6 +560,7 @@
                     erroElement.classList.add("d-none");
                 }
 
+                // Adiciona uma mensagem recebida à área do chat
                 function adicionarMensagem(mensagem) {
 
                     if (mensagemVaziaElement !== null) {
@@ -609,6 +614,7 @@
                         mensagensElement.scrollHeight;
                 }
 
+                // Recebe as mensagens enviadas pelo servidor em tempo real
                 connection.on(
                     "ReceberMensagem",
                     function (mensagem) {
@@ -616,6 +622,7 @@
                     }
                 );
 
+                // Volta a entrar no grupo do evento após uma reconexão
                 connection.onreconnecting(function () {
                     enviarButton.disabled = true;
                     mostrarErro(
@@ -648,6 +655,7 @@
                     );
                 });
 
+                // Envia a mensagem através do Hub sem recarregar a página
                 formulario.addEventListener(
                     "submit",
                     async function (evento) {
@@ -694,6 +702,7 @@
                     }
                 );
 
+                // Inicia a ligação e adiciona o utilizador ao grupo do evento
                 try {
                     await connection.start();
 

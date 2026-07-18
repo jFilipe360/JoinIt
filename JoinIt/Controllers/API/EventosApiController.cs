@@ -26,12 +26,15 @@ namespace JoinIt.Controllers.Api
         // GET: /api/eventos
         [HttpGet]
         [AllowAnonymous]
+        // Devolve todos os eventos públicos
         public async Task<ActionResult<IEnumerable<EventoDto>>> GetEventos()
         {
             var eventos = await _context.Eventos
                 .AsNoTracking()
                 .Where(e => !e.IsPrivado)
                 .OrderBy(e => e.DataHora)
+                // Converte as entidades em DTOs para controlar
+                // os dados enviados na resposta.
                 .Select(e => new EventoDto
                 {
                     Id = e.Id,
@@ -50,6 +53,7 @@ namespace JoinIt.Controllers.Api
         }
 
         // GET: /api/eventos/5
+        // Devolve um evento público específico pelo seu ID
         [HttpGet("{id:int}")]
         [AllowAnonymous]
         public async Task<ActionResult<EventoDto>> GetEvento(int id)
@@ -73,6 +77,7 @@ namespace JoinIt.Controllers.Api
                 })
                 .FirstOrDefaultAsync();
 
+            // O evento pode não existir ou ser privado.
             if (evento == null)
             {
                 return NotFound();
@@ -82,6 +87,7 @@ namespace JoinIt.Controllers.Api
         }
 
         // POST: /api/eventos
+        // Cria um novo evento associado ao utilizador autenticado
         [HttpPost]
         public async Task<ActionResult<EventoDto>> CriarEvento(
             CriarEventoDto dto)
@@ -93,6 +99,7 @@ namespace JoinIt.Controllers.Api
                 return Unauthorized();
             }
 
+            // Um evento não pode ser criado com uma data passada
             if (dto.DataHora <= DateTime.Now)
             {
                 ModelState.AddModelError(
@@ -102,6 +109,7 @@ namespace JoinIt.Controllers.Api
                 return ValidationProblem(ModelState);
             }
 
+            // Confirma que a categoria recebida no DTO existe
             var categoria = await _context.Categorias
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == dto.CategoriaId);
@@ -115,6 +123,7 @@ namespace JoinIt.Controllers.Api
                 return ValidationProblem(ModelState);
             }
 
+            // Converte os dados recebidos no DTO numa entidade Evento
             var evento = new Evento
             {
                 Titulo = dto.Titulo.Trim(),
@@ -132,6 +141,7 @@ namespace JoinIt.Controllers.Api
             _context.Eventos.Add(evento);
             await _context.SaveChangesAsync();
 
+            // Prepara o DTO devolvido ao cliente após a criação
             var resultado = new EventoDto
             {
                 Id = evento.Id,
@@ -145,6 +155,7 @@ namespace JoinIt.Controllers.Api
                 NumeroMaximoParticipantes = evento.NumMaxParticipantes
             };
 
+            // Devolve HTTP 201 e o endereço do novo recurso
             return CreatedAtAction(
                 nameof(GetEvento),
                 new { id = evento.Id },
@@ -152,10 +163,9 @@ namespace JoinIt.Controllers.Api
         }
 
         // PUT: /api/eventos/5
+        // Atualiza um evento existente
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> AtualizarEvento(
-            int id,
-            CriarEventoDto dto)
+        public async Task<IActionResult> AtualizarEvento(int id,CriarEventoDto dto)
         {
             var utilizadorId = _userManager.GetUserId(User);
 
@@ -164,6 +174,7 @@ namespace JoinIt.Controllers.Api
                 return Unauthorized();
             }
 
+            // Os participantes são carregados para validar o novo limite máximo do evento
             var evento = await _context.Eventos
                 .Include(e => e.Participantes)
                 .FirstOrDefaultAsync(e => e.Id == id);
@@ -173,6 +184,7 @@ namespace JoinIt.Controllers.Api
                 return NotFound();
             }
 
+            // Apenas o criador do evento ou um administrador pode alterar os seus dados
             var podeEditar =
                 evento.CriadorId == utilizadorId ||
                 User.IsInRole("Admin");
@@ -184,9 +196,7 @@ namespace JoinIt.Controllers.Api
 
             if (dto.DataHora <= DateTime.Now)
             {
-                ModelState.AddModelError(
-                    nameof(dto.DataHora),
-                    "A data do evento deve ser futura.");
+                ModelState.AddModelError(nameof(dto.DataHora),"A data do evento deve ser futura.");
 
                 return ValidationProblem(ModelState);
             }
@@ -196,20 +206,17 @@ namespace JoinIt.Controllers.Api
 
             if (!categoriaExiste)
             {
-                ModelState.AddModelError(
-                    nameof(dto.CategoriaId),
-                    "A categoria selecionada não existe.");
+                ModelState.AddModelError(nameof(dto.CategoriaId),"A categoria selecionada não existe.");
 
                 return ValidationProblem(ModelState);
             }
 
             var numeroParticipantes = evento.Participantes.Count;
 
+            // O limite não pode ficar abaixo do número de participantes que já estão inscritos
             if (dto.NumeroMaximoParticipantes < numeroParticipantes)
             {
-                ModelState.AddModelError(
-                    nameof(dto.NumeroMaximoParticipantes),
-                    $"O evento já tem {numeroParticipantes} participantes.");
+                ModelState.AddModelError(nameof(dto.NumeroMaximoParticipantes),$"O evento já tem {numeroParticipantes} participantes.");
 
                 return ValidationProblem(ModelState);
             }
@@ -225,10 +232,12 @@ namespace JoinIt.Controllers.Api
 
             await _context.SaveChangesAsync();
 
+            // HTTP 204 indica que a atualização foi realizada e que não existe conteúdo para devolver
             return NoContent();
         }
 
         // DELETE: /api/eventos/5
+        // Cancela um evento existente
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> CancelarEvento(int id)
         {
@@ -247,6 +256,7 @@ namespace JoinIt.Controllers.Api
                 return NotFound();
             }
 
+            // Apenas o criador ou um administrador pode cancelar o evento
             var podeEliminar =
                 evento.CriadorId == utilizadorId ||
                 User.IsInRole("Admin");
@@ -256,6 +266,7 @@ namespace JoinIt.Controllers.Api
                 return Forbid();
             }
 
+            // Se já estiver cancelado, a operação continua a ser considerada bem-sucedida.
             if (evento.Estado == EstadoEvento.Cancelado)
             {
                 return NoContent();

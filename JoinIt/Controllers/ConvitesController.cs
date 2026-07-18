@@ -14,14 +14,13 @@ namespace JoinIt.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public ConvitesController(
-            ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+        public ConvitesController(ApplicationDbContext context,UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
+        // Apresenta todos os convites recebidos pelo utilizador atual
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
@@ -33,6 +32,7 @@ namespace JoinIt.Controllers
 
             var convites = await _context.ConvitesEventos
                 .AsNoTracking()
+                // Carrega os dados necessários para apresentar a informação completa de cada evento.
                 .Include(c => c.Evento)
                     .ThenInclude(e => e.Criador)
                 .Include(c => c.Evento)
@@ -46,6 +46,7 @@ namespace JoinIt.Controllers
             return View(convites);
         }
 
+        // Aceita um convite pendente e adiciona o utilizador à lista de participantes do evento
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Aceitar(int id)
@@ -58,6 +59,7 @@ namespace JoinIt.Controllers
             }
 
             var convite = await _context.ConvitesEventos
+                // Os participantes têm de ser carregados para verificar se o utilizador já participa e se ainda existem vagas
                 .Include(c => c.Evento)
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
@@ -69,17 +71,12 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
-            if (convite.Estado != EstadoPedido.Pendente)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-
             var evento = convite.Evento;
 
+            // Eventos cancelados ou terminados já não aceitam inscrições
             if (evento.Estado == EstadoEvento.Cancelado || evento.Estado == EstadoEvento.Terminado)
             {
-                TempData["Erro"] =
-                    "Este evento já não aceita participantes.";
+                TempData["Erro"] = "Este evento já não aceita participantes.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -87,15 +84,15 @@ namespace JoinIt.Controllers
             var jaParticipa = evento.Participantes
                 .Any(p => p.UserId == userId);
 
-            if (!jaParticipa &&
-                evento.Participantes.Count >= evento.NumMaxParticipantes)
+            // Só é necessário verificar o número de participantes quando o utilizador ainda não pertence ao evento
+            if (!jaParticipa && evento.Participantes.Count >= evento.NumMaxParticipantes)
             {
-                TempData["Erro"] =
-                    "O evento já atingiu o número máximo de participantes.";
+                TempData["Erro"] = "O evento já atingiu o número máximo de participantes.";
 
                 return RedirectToAction(nameof(Index));
             }
 
+            // Evita criar uma participação duplicada
             if (!jaParticipa)
             {
                 var participante = new Participante
@@ -118,11 +115,11 @@ namespace JoinIt.Controllers
                 utilizadorAtual?.UserName ??
                 "Um utilizador";
 
+            // Notifica o organizador de que o convite foi aceite
             _context.Notificacoes.Add(new Notificacao
             {
                 UtilizadorId = convite.Evento.CriadorId,
-                Mensagem =
-                    $"{nomeUtilizador} aceitou o convite para o evento \"{convite.Evento.Titulo}\".",
+                Mensagem = $"{nomeUtilizador} aceitou o convite para o evento \"{convite.Evento.Titulo}\".",
                 Link = Url.Action(
                     "Details",
                     "Eventos",
@@ -143,6 +140,7 @@ namespace JoinIt.Controllers
             );
         }
 
+        // Rejeita um convite recebido que ainda esteja pendente
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Rejeitar(int id)

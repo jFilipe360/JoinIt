@@ -243,17 +243,20 @@
 
             let ficheiroPreviewUrl = null;
 
+            // Apresenta uma imagem na área de pré-visualização
             function mostrarImagem(url) {
                 fotoPreview.src = url;
                 fotoPreview.style.display = "block";
                 fotoInicial.style.display = "none";
             }
 
+            // Apresenta a imagem inicial quando não existe fotografia válida
             function mostrarInicial() {
                 fotoPreview.style.display = "none";
                 fotoInicial.style.display = "flex";
             }
 
+            // Cria uma pré-visualização do ficheiro escolhido
             fotografiaInput.addEventListener("change", function () {
 
                 const ficheiro = fotografiaInput.files[0];
@@ -282,6 +285,7 @@
                 }
             });
 
+            // Atualiza a pré-visualização enquanto o URL é alterado
             fotoUrlInput.addEventListener("input", function () {
 
                 if (fotografiaInput.files.length > 0) {
@@ -302,6 +306,7 @@
                 }
             });
 
+            // Limpa as opções de fotografia quando é pedida a sua remoção
             if (removerFotoInput) {
                 removerFotoInput.addEventListener("change", function () {
 

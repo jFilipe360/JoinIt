@@ -194,6 +194,7 @@
                 longitudeInput.value.replace(",", ".")
             );
 
+            // Verifica se o evento já possui uma localização válida
             const temLocalizacaoInicial =
                 Number.isFinite(latitudeInicial) &&
                 Number.isFinite(longitudeInicial) &&
@@ -202,6 +203,7 @@
             const latitudePadrao = 39.5;
             const longitudePadrao = -8.0;
 
+            // Inicializa o mapa na localização do evento ou no centro de Portugal
             const map = L.map("map").setView(
                 temLocalizacaoInicial
                     ? [latitudeInicial, longitudeInicial]
@@ -220,6 +222,7 @@
 
             let marker = null;
 
+            // Atualiza os campos escondidos usados pelo formulário
             function atualizarCoordenadas(latitude, longitude) {
 
                 const latitudeFormatada =
@@ -238,6 +241,7 @@
                     longitude.toFixed(6);
             }
 
+            // Cria o marcador ou altera a sua posição
             function colocarMarcador(latitude, longitude) {
 
                 if (marker === null) {
@@ -276,6 +280,7 @@
                 );
             }
 
+            // Permite escolher uma nova localização ao clicar no mapa
             map.on("click", function (evento) {
 
                 colocarMarcador(

@@ -15,6 +15,7 @@ namespace JoinIt.Controllers
             _context = context;
         }
 
+        // Conta e exibe estatísticas sobre a plataforma
         public async Task<IActionResult> Index()
         {
             ViewBag.TotalUtilizadores =

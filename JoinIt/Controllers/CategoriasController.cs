@@ -17,12 +17,14 @@ namespace JoinIt.Controllers
             _context = context;
         }
 
+        // Lista de categorias
         // GET: CATEGORIAS
         public async Task<IActionResult> Index()
         {
             return View(await _context.Categorias.ToListAsync());
         }
 
+        // Detalhes de uma categoria
         // GET: CATEGORIAS/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -48,8 +50,7 @@ namespace JoinIt.Controllers
         }
 
         // POST: CATEGORIAS/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // Criar uma nova categoria
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Nome,Eventos")] Categoria categoria)
@@ -80,8 +81,7 @@ namespace JoinIt.Controllers
         }
 
         // POST: CATEGORIAS/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // Editar uma categoria existente
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int? id, [Bind("Id,Nome,Eventos")] Categoria categoria)
@@ -133,6 +133,7 @@ namespace JoinIt.Controllers
         }
 
         // POST: CATEGORIAS/Delete/5
+        // Eliminar uma categoria existente
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int? id)
@@ -147,6 +148,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        //Verifica se uma categoria existe
         private bool CategoriaExists(int? id)
         {
             return _context.Categorias.Any(e => e.Id == id);

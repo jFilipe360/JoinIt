@@ -13,14 +13,13 @@ namespace JoinIt.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public NotificacoesController(
-            ApplicationDbContext context,
-            UserManager<Models.ApplicationUser> userManager)
+        public NotificacoesController(ApplicationDbContext context,UserManager<Models.ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
+        // Lista todas as notificações do utilizador atual, ordenadas pela data de criação (mais recentes primeiro).
         public async Task<IActionResult> Index()
         {
             var userId = _userManager.GetUserId(User);
@@ -39,6 +38,7 @@ namespace JoinIt.Controllers
             return View(notificacoes);
         }
 
+        // Marca uma notificação específica como lida e redireciona para o link associado, se houver.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarcarComoLida(int id)
@@ -50,6 +50,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // Procura a notificação apenas entre as notificações pertencentes ao utilizador autenticado
             var notificacao = await _context.Notificacoes
                 .FirstOrDefaultAsync(n =>
                     n.Id == id &&
@@ -64,8 +65,8 @@ namespace JoinIt.Controllers
 
             await _context.SaveChangesAsync();
 
-            if (!string.IsNullOrWhiteSpace(notificacao.Link) &&
-                Url.IsLocalUrl(notificacao.Link))
+            // Só permite redirecionamentos para endereços internos da aplicação
+            if (!string.IsNullOrWhiteSpace(notificacao.Link) && Url.IsLocalUrl(notificacao.Link))
             {
                 return LocalRedirect(notificacao.Link);
             }
@@ -73,6 +74,7 @@ namespace JoinIt.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // Marca todas as notificações do utilizador atual como lidas.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarcarTodasComoLidas()
@@ -84,6 +86,7 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
+            // Obtém apenas as notificações ainda não lidas do utilizador atual
             var notificacoes = await _context.Notificacoes
                 .Where(n =>
                     n.UtilizadorId == userId &&
@@ -97,39 +100,9 @@ namespace JoinIt.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["Sucesso"] =
-                "Todas as notificações foram marcadas como lidas.";
+            TempData["Sucesso"] = "Todas as notificações foram marcadas como lidas.";
 
             return RedirectToAction(nameof(Index));
         }
-
-        //Testar notificações
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> CriarTeste()
-        //{
-        //    var userId = _userManager.GetUserId(User);
-
-        //    if (userId == null)
-        //    {
-        //        return Challenge();
-        //    }
-
-        //    var notificacao = new Notificacao
-        //    {
-        //        UtilizadorId = userId,
-        //        Mensagem = "Esta é uma notificação de teste.",
-        //        Link = Url.Action("Index", "Eventos"),
-        //        Lida = false,
-        //        CriadaEm = DateTime.Now
-        //    };
-
-        //    _context.Notificacoes.Add(notificacao);
-        //    await _context.SaveChangesAsync();
-
-        //    TempData["Sucesso"] = "Notificação de teste criada.";
-
-        //    return RedirectToAction(nameof(Index));
-        //}
     }
 }
