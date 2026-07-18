@@ -59,10 +59,10 @@ namespace JoinIt.Controllers
 
             var convite = await _context.ConvitesEventos
                 .Include(c => c.Evento)
-                    .ThenInclude(e => e.Participantes)
                 .FirstOrDefaultAsync(c =>
                     c.Id == id &&
-                    c.UtilizadorId == userId);
+                    c.UtilizadorId == userId &&
+                    c.Estado == EstadoConvite.Pendente);
 
             if (convite == null)
             {
@@ -110,6 +110,27 @@ namespace JoinIt.Controllers
             }
 
             convite.Estado = EstadoConvite.Aceite;
+
+            var utilizadorAtual = await _userManager.GetUserAsync(User);
+
+            var nomeUtilizador =
+                utilizadorAtual?.Nome ??
+                utilizadorAtual?.UserName ??
+                "Um utilizador";
+
+            _context.Notificacoes.Add(new Notificacao
+            {
+                UtilizadorId = convite.Evento.CriadorId,
+                Mensagem =
+                    $"{nomeUtilizador} aceitou o convite para o evento \"{convite.Evento.Titulo}\".",
+                Link = Url.Action(
+                    "Details",
+                    "Eventos",
+                    new { id = convite.EventoId }
+                ),
+                Lida = false,
+                CriadaEm = DateTime.Now
+            });
 
             await _context.SaveChangesAsync();
 

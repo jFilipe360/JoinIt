@@ -13,9 +13,7 @@ namespace JoinIt.Hubs
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public ChatHub(
-            ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+        public ChatHub(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
@@ -49,32 +47,23 @@ namespace JoinIt.Hubs
         {
             var userId = ObterUserId();
 
-            var podeAceder = await PodeAcederAoChat(
-                eventoId,
-                userId
-            );
+            var podeAceder = await PodeAcederAoChat(eventoId,userId);
 
             if (!podeAceder)
             {
-                throw new HubException(
-                    "Não tens autorização para enviar mensagens neste evento."
-                );
+                throw new HubException("Não tens autorização para enviar mensagens neste evento." );
             }
 
             texto = texto?.Trim() ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(texto))
             {
-                throw new HubException(
-                    "A mensagem não pode estar vazia."
-                );
+                throw new HubException("A mensagem não pode estar vazia.");
             }
 
             if (texto.Length > 500)
             {
-                throw new HubException(
-                    "A mensagem não pode ter mais de 500 caracteres."
-                );
+                throw new HubException("A mensagem não pode ter mais de 500 caracteres.");
             }
 
             var utilizador = await _context.Users

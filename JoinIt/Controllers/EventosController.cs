@@ -23,12 +23,12 @@ namespace JoinIt.Controllers
         }
 
         // GET: EVENTOS
+        [AllowAnonymous]
         public async Task<IActionResult> Index(string? pesquisa, int? categoriaId, string? tipo, bool apenasFuturos = false, bool participo = false, string ordem = "data")
         {
-            var userId = _userManager.GetUserId(User);
-
-            if (userId == null)
-                return Challenge();
+            var userId = User.Identity?.IsAuthenticated == true
+                ? _userManager.GetUserId(User)
+                : null;
 
             var query = _context.Eventos
                 .AsNoTracking()
@@ -36,14 +36,39 @@ namespace JoinIt.Controllers
                 .Include(e => e.Criador)
                 .Include(e => e.Participantes)
                 .Include(e => e.Convites)
-                .Where(e =>
+                .AsQueryable();
+
+            //Controlar a visibilidade de eventos privados com base no utilizador autenticado
+            if (userId == null)
+            {
+                query = query.Where(e => !e.IsPrivado);
+            }
+            else
+            {
+                query = query.Where(e =>
                     !e.IsPrivado ||
                     e.CriadorId == userId ||
                     e.Participantes.Any(p => p.UserId == userId) ||
                     e.Convites.Any(c =>
                         c.UtilizadorId == userId &&
-                        c.Estado != JoinIt.Enums.EstadoConvite.Rejeitado));
+                        c.Estado != EstadoConvite.Rejeitado));
+            }
 
+            // Esconder eventos passados dos outros utilizadores
+            // O criador continua a ver os próprios eventos passados
+            // O Admin continua a ver todos
+            var agora = DateTime.Now;
+
+            if (!User.IsInRole("Admin"))
+            {
+                query = query.Where(e =>
+                    e.DataHora >= agora ||
+                    e.Estado == EstadoEvento.ADecorrer ||
+                    (userId != null && e.CriadorId == userId));
+            }
+
+
+            //Pesquisa pelos filtros fornecidos
             if (!string.IsNullOrWhiteSpace(pesquisa))
             {
                 pesquisa = pesquisa.Trim();
@@ -52,12 +77,14 @@ namespace JoinIt.Controllers
                     e.Titulo.Contains(pesquisa));
             }
 
+            // Filtrar por categoria
             if (categoriaId.HasValue)
             {
                 query = query.Where(e =>
                     e.CategoriaId == categoriaId.Value);
             }
 
+            // Filtrar por tipo de evento (público ou privado)
             if (tipo == "publico")
             {
                 query = query.Where(e => !e.IsPrivado);
@@ -67,21 +94,20 @@ namespace JoinIt.Controllers
                 query = query.Where(e => e.IsPrivado);
             }
 
-            if (apenasFuturos)
-            {
-                var agora = DateTime.Now;
 
-                query = query.Where(e =>
-                    e.DataHora >= agora);
-            }
-
+            //Eventos em que o utilizador participa
             if (participo)
             {
+                if (userId == null)
+                {
+                    return Challenge();
+                }
+
                 query = query.Where(e =>
-                    e.Participantes.Any(p =>
-                        p.UserId == userId));
+                    e.Participantes.Any(p => p.UserId == userId));
             }
 
+            //Ordenação dos eventos
             query = ordem switch
             {
                 "data_desc" => query
@@ -119,6 +145,7 @@ namespace JoinIt.Controllers
         }
 
         // GET: EVENTOS/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -143,7 +170,9 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
-            var userId = _userManager.GetUserId(User);
+            var userId = User.Identity?.IsAuthenticated == true
+                ? _userManager.GetUserId(User)
+                : null;
 
             if (userId == null)
             {
@@ -152,13 +181,17 @@ namespace JoinIt.Controllers
 
             if (evento.IsPrivado)
             {
+                if (userId == null)
+                {
+                    return Challenge();
+                }
+
                 var temAcesso =
                     evento.CriadorId == userId ||
                     evento.Participantes.Any(p => p.UserId == userId) ||
                     evento.Convites.Any(c =>
                         c.UtilizadorId == userId &&
-                        (c.Estado == EstadoConvite.Pendente ||
-                         c.Estado == EstadoConvite.Aceite));
+                        c.Estado != EstadoConvite.Rejeitado);
 
                 if (!temAcesso)
                 {
@@ -205,8 +238,11 @@ namespace JoinIt.Controllers
             }
 
             ViewBag.PodeUsarChat =
-                evento.CriadorId == userId ||
-                evento.Participantes.Any(p => p.UserId == userId);
+                userId != null &&
+                (
+                    evento.CriadorId == userId ||
+                    evento.Participantes.Any(p => p.UserId == userId)
+                );
 
             return View(evento);
         }
@@ -440,6 +476,7 @@ namespace JoinIt.Controllers
         public async Task<IActionResult> DeleteConfirmed(int? id)
         {
             var evento = await _context.Eventos.FindAsync(id);
+
             if (evento == null)
                 return NotFound();
 
@@ -659,6 +696,8 @@ namespace JoinIt.Controllers
                     c.EventoId == id &&
                     c.UtilizadorId == utilizadorId);
 
+            var conviteEnviado = false;
+
             if (conviteExistente == null)
             {
                 var convite = new ConviteEvento
@@ -670,14 +709,38 @@ namespace JoinIt.Controllers
                 };
 
                 _context.ConvitesEventos.Add(convite);
+
+                conviteEnviado = true;
             }
             else if (conviteExistente.Estado == EstadoConvite.Rejeitado)
             {
                 conviteExistente.Estado = EstadoConvite.Pendente;
                 conviteExistente.DataConvite = DateTime.Now;
+
+                conviteEnviado = true;
             }
 
-            await _context.SaveChangesAsync();
+            if (conviteEnviado)
+            {
+                _context.Notificacoes.Add(new Notificacao
+                {
+                    UtilizadorId = utilizadorId,
+                    Mensagem =
+                        $"Recebeste um convite para o evento \"{evento.Titulo}\".",
+                    Link = Url.Action("Index", "Convites"),
+                    Lida = false,
+                    CriadaEm = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+
+                TempData["Sucesso"] = "Convite enviado com sucesso.";
+            }
+            else
+            {
+                TempData["Aviso"] =
+                    "Este utilizador já possui um convite pendente ou aceite.";
+            }
 
             return RedirectToAction(
                 nameof(Details),
@@ -685,6 +748,7 @@ namespace JoinIt.Controllers
             );
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Mapa()
         {
             var eventos = await _context.Eventos
@@ -705,9 +769,7 @@ namespace JoinIt.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AlterarEstado(
-    int id,
-    EstadoEvento novoEstado)
+        public async Task<IActionResult> AlterarEstado(int id, EstadoEvento novoEstado)
         {
             var userId = _userManager.GetUserId(User);
 
@@ -760,6 +822,46 @@ namespace JoinIt.Controllers
             }
 
             evento.Estado = novoEstado;
+
+            var mensagemNotificacao = novoEstado switch
+            {
+                EstadoEvento.ADecorrer =>
+                    $"O evento \"{evento.Titulo}\" começou.",
+
+                EstadoEvento.Terminado =>
+                    $"O evento \"{evento.Titulo}\" terminou.",
+
+                EstadoEvento.Cancelado =>
+                    $"O evento \"{evento.Titulo}\" foi cancelado.",
+
+                _ => $"O estado do evento \"{evento.Titulo}\" foi atualizado."
+            };
+
+            var destinatarios = await _context.Participantes
+                .Where(p =>
+                    p.EventoId == evento.Id &&
+                    p.UserId != userId)
+                .Select(p => p.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            var linkEvento = Url.Action(
+                "Details",
+                "Eventos",
+                new { id = evento.Id }
+            );
+
+            var notificacoes = destinatarios.Select(utilizadorId =>
+                new Notificacao
+                {
+                    UtilizadorId = utilizadorId,
+                    Mensagem = mensagemNotificacao,
+                    Link = linkEvento,
+                    Lida = false,
+                    CriadaEm = DateTime.Now
+                });
+
+            _context.Notificacoes.AddRange(notificacoes);
 
             await _context.SaveChangesAsync();
 

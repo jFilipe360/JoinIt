@@ -54,7 +54,7 @@ else
 }
 
 app.UseStatusCodePagesWithReExecute(
-    "/Home/StatusCode",
+    "/Home/ErrorHttp",
     "?code={0}"
 );
 

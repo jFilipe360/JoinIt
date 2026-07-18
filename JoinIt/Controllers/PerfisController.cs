@@ -12,11 +12,13 @@ namespace JoinIt.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _environment;
 
-        public PerfisController(ApplicationDbContext context,UserManager<ApplicationUser> userManager)
+        public PerfisController(ApplicationDbContext context,UserManager<ApplicationUser> userManager, IWebHostEnvironment environment)
         {
             _context = context;
             _userManager = userManager;
+            _environment = environment;
         }
 
         public async Task<IActionResult> Index(string? pesquisa)
@@ -135,9 +137,7 @@ namespace JoinIt.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(
-            string nome,
-            string? fotoPerfil)
+        public async Task<IActionResult> Edit(string nome, string? fotoPerfil, IFormFile? fotografia)
         {
             var utilizador = await _userManager.GetUserAsync(User);
 
@@ -146,53 +146,118 @@ namespace JoinIt.Controllers
                 return Challenge();
             }
 
-            nome = nome?.Trim() ?? string.Empty;
-
-            fotoPerfil = string.IsNullOrWhiteSpace(fotoPerfil)
-                ? null
-                : fotoPerfil.Trim();
-
             if (string.IsNullOrWhiteSpace(nome))
             {
                 ModelState.AddModelError(
-                    nameof(ApplicationUser.Nome),
+                    "Nome",
                     "O nome é obrigatório."
                 );
             }
-            else if (nome.Length > 100)
-            {
-                ModelState.AddModelError(
-                    nameof(ApplicationUser.Nome),
-                    "O nome não pode ter mais de 100 caracteres."
-                );
-            }
 
-            if (fotoPerfil != null)
+            if (fotografia != null && fotografia.Length > 0)
             {
-                var urlValida =
-                    Uri.TryCreate(
-                        fotoPerfil,
-                        UriKind.Absolute,
-                        out var uri
-                    ) &&
-                    (uri.Scheme == Uri.UriSchemeHttp ||
-                     uri.Scheme == Uri.UriSchemeHttps);
+                const long tamanhoMaximo = 2 * 1024 * 1024;
 
-                if (!urlValida)
+                if (fotografia.Length > tamanhoMaximo)
                 {
                     ModelState.AddModelError(
-                        nameof(ApplicationUser.FotoPerfil),
-                        "Introduz um endereço de imagem válido."
+                        "fotografia",
+                        "A fotografia não pode ultrapassar 2 MB."
+                    );
+                }
+
+                var extensao = Path
+                    .GetExtension(fotografia.FileName)
+                    .ToLowerInvariant();
+
+                var extensoesPermitidas = new[]
+                {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
+                var tiposPermitidos = new[]
+                {
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        };
+
+                if (!extensoesPermitidas.Contains(extensao) ||
+                    !tiposPermitidos.Contains(fotografia.ContentType))
+                {
+                    ModelState.AddModelError(
+                        "fotografia",
+                        "Seleciona uma imagem JPG, PNG ou WebP."
                     );
                 }
             }
 
-            utilizador.Nome = nome;
-            utilizador.FotoPerfil = fotoPerfil;
-
             if (!ModelState.IsValid)
             {
                 return View(utilizador);
+            }
+
+            utilizador.Nome = nome.Trim();
+
+            if (fotografia != null && fotografia.Length > 0)
+            {
+                var pastaFotografias = Path.Combine(
+                    _environment.WebRootPath,
+                    "uploads",
+                    "perfis"
+                );
+
+                Directory.CreateDirectory(pastaFotografias);
+
+                var extensao = Path
+                    .GetExtension(fotografia.FileName)
+                    .ToLowerInvariant();
+
+                var nomeFicheiro = $"{Guid.NewGuid()}{extensao}";
+
+                var caminhoFisico = Path.Combine(
+                    pastaFotografias,
+                    nomeFicheiro
+                );
+
+                await using (var stream = new FileStream(
+                    caminhoFisico,
+                    FileMode.Create))
+                {
+                    await fotografia.CopyToAsync(stream);
+                }
+
+                // Apagar a fotografia local anterior, quando existir.
+                if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil) &&
+                    utilizador.FotoPerfil.StartsWith(
+                        "/uploads/perfis/",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    var nomeFicheiroAntigo = Path.GetFileName(
+                        utilizador.FotoPerfil
+                    );
+
+                    var caminhoAntigo = Path.Combine(
+                        pastaFotografias,
+                        nomeFicheiroAntigo
+                    );
+
+                    if (System.IO.File.Exists(caminhoAntigo))
+                    {
+                        System.IO.File.Delete(caminhoAntigo);
+                    }
+                }
+
+                utilizador.FotoPerfil =
+                    $"/uploads/perfis/{nomeFicheiro}";
+            }
+            else if (!string.IsNullOrWhiteSpace(fotoPerfil))
+            {
+                // Mantém também a possibilidade de usar um URL.
+                utilizador.FotoPerfil = fotoPerfil.Trim();
             }
 
             var resultado = await _userManager.UpdateAsync(utilizador);
@@ -210,10 +275,9 @@ namespace JoinIt.Controllers
                 return View(utilizador);
             }
 
-            return RedirectToAction(
-                nameof(Details),
-                new { id = utilizador.Id }
-            );
+            TempData["Sucesso"] = "Perfil atualizado com sucesso.";
+
+            return RedirectToAction(nameof(MeuPerfil));
         }
 
 

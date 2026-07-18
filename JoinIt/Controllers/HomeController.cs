@@ -31,13 +31,12 @@ namespace JoinIt.Controllers
         }
 
         [AllowAnonymous]
-        public IActionResult StatusCode(int code)
+        public IActionResult ErroHttp(int code)
         {
             Response.StatusCode = code;
-
             ViewBag.Codigo = code;
 
-            return View();
+            return View("StatusCode");
         }
 
         [AllowAnonymous]

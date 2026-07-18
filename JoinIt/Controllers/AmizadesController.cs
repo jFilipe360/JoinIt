@@ -78,6 +78,13 @@ namespace JoinIt.Controllers
                 return NotFound();
             }
 
+            var utilizadorAtual = await _userManager.GetUserAsync(User);
+
+            var nomeUtilizador =
+                utilizadorAtual?.Nome ??
+                utilizadorAtual?.UserName ??
+                "Um utilizador";
+
             var amizadeExistente = await _context.Amizades
                 .FirstOrDefaultAsync(a =>
                     (a.PedidoPorId == userId && a.PedidoAId == id) ||
@@ -86,16 +93,33 @@ namespace JoinIt.Controllers
 
             if (amizadeExistente != null)
             {
-                if (amizadeExistente.Estado ==
-                    JoinIt.Enums.EstadoAmizade.Rejeitado)
+                if (amizadeExistente.Estado == EstadoAmizade.Rejeitado)
                 {
                     amizadeExistente.PedidoPorId = userId;
                     amizadeExistente.PedidoAId = id;
-                    amizadeExistente.Estado =
-                        JoinIt.Enums.EstadoAmizade.Pendente;
+                    amizadeExistente.Estado = EstadoAmizade.Pendente;
                     amizadeExistente.DataPedido = DateTime.Now;
 
+                    _context.Notificacoes.Add(new Notificacao
+                    {
+                        // O destinatário recebe a notificação
+                        UtilizadorId = id,
+                        Mensagem =
+                            $"{nomeUtilizador} enviou-te um pedido de amizade.",
+                        Link = Url.Action("Index", "Amizades"),
+                        Lida = false,
+                        CriadaEm = DateTime.Now
+                    });
+
                     await _context.SaveChangesAsync();
+
+                    TempData["Sucesso"] =
+                        "Pedido de amizade enviado novamente.";
+                }
+                else
+                {
+                    TempData["Aviso"] =
+                        "Já existe um pedido ou amizade entre estes utilizadores.";
                 }
 
                 return RedirectToAction(
@@ -109,11 +133,23 @@ namespace JoinIt.Controllers
             {
                 PedidoPorId = userId,
                 PedidoAId = id,
-                Estado = JoinIt.Enums.EstadoAmizade.Pendente,
+                Estado = EstadoAmizade.Pendente,
                 DataPedido = DateTime.Now
             };
 
             _context.Amizades.Add(amizade);
+
+            _context.Notificacoes.Add(new Notificacao
+            {
+                // Tem de ser 'id', não 'userId'
+                UtilizadorId = id,
+                Mensagem =
+                    $"{nomeUtilizador} enviou-te um pedido de amizade.",
+                Link = Url.Action("Index", "Amizades"),
+                Lida = false,
+                CriadaEm = DateTime.Now
+            });
+
             await _context.SaveChangesAsync();
 
             TempData["Sucesso"] = "Pedido de amizade enviado.";
@@ -177,6 +213,24 @@ namespace JoinIt.Controllers
             }
 
             amizade.Estado = EstadoAmizade.Aceite;
+
+            var utilizadorAtual = await _userManager.GetUserAsync(User);
+
+            var nomeUtilizador =
+                utilizadorAtual?.Nome ??
+                utilizadorAtual?.UserName ??
+                "Um utilizador";
+
+            amizade.Estado = EstadoAmizade.Aceite;
+
+            _context.Notificacoes.Add(new Notificacao
+            {
+                UtilizadorId = amizade.PedidoPorId,
+                Mensagem = $"{nomeUtilizador} aceitou o teu pedido de amizade.",
+                Link = Url.Action("Index", "Amizades"),
+                Lida = false,
+                CriadaEm = DateTime.Now
+            });
 
             await _context.SaveChangesAsync();
 

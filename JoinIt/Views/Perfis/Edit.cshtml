@@ -6,6 +6,19 @@
     var inicial = !string.IsNullOrWhiteSpace(Model.Nome)
         ? Model.Nome.Substring(0, 1).ToUpper()
         : "?";
+
+    var fotoUrlAtual = "";
+
+    if (!string.IsNullOrWhiteSpace(Model.FotoPerfil) &&
+        Uri.TryCreate(
+            Model.FotoPerfil,
+            UriKind.Absolute,
+            out var uriFoto) &&
+        (uriFoto.Scheme == Uri.UriSchemeHttp ||
+         uriFoto.Scheme == Uri.UriSchemeHttps))
+    {
+        fotoUrlAtual = Model.FotoPerfil;
+    }
 }
 
 <div class="mb-4">
@@ -71,14 +84,17 @@
 
             <div class="col-12 col-md-8">
 
-                <form asp-action="Edit" method="post">
+                <form asp-action="Edit"
+                      method="post"
+                      enctype="multipart/form-data">
 
                     <div asp-validation-summary="ModelOnly"
                          class="text-danger mb-3">
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Nome" class="form-label">
+                        <label asp-for="Nome"
+                               class="form-label">
                             Nome
                         </label>
 
@@ -116,14 +132,40 @@
                                disabled />
                     </div>
 
-                    <div class="mb-4">
-                        <label asp-for="FotoPerfil"
+                    <div class="mb-3">
+                        <label for="fotografia"
+                               class="form-label">
+                            Carregar fotografia
+                        </label>
+
+                        <input id="fotografia"
+                               name="fotografia"
+                               type="file"
+                               class="form-control"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+
+                        @Html.ValidationMessage(
+                        "fotografia",
+                                                null,
+                                                new { @class = "text-danger" }
+                                                )
+
+                        <div class="form-text">
+                            Formatos permitidos: JPG, PNG e WebP.
+                            Tamanho máximo: 2 MB.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="FotoPerfil"
                                class="form-label">
                             URL da fotografia
                         </label>
 
-                        <input asp-for="FotoPerfil"
+                        <input id="FotoPerfil"
+                               name="fotoPerfil"
                                type="url"
+                               value="@fotoUrlAtual"
                                class="form-control"
                                placeholder="https://exemplo.com/foto.jpg" />
 
@@ -132,10 +174,26 @@
                         </span>
 
                         <div class="form-text">
-                            Introduz o endereço completo de uma imagem.
-                            Deixa vazio para remover a fotografia.
+                            Podes carregar um ficheiro ou indicar um URL.
+                            O ficheiro tem prioridade.
                         </div>
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.FotoPerfil))
+                    {
+                        <div class="form-check mb-4">
+                            <input id="removerFoto"
+                                   name="removerFoto"
+                                   value="true"
+                                   type="checkbox"
+                                   class="form-check-input" />
+
+                            <label for="removerFoto"
+                                   class="form-check-label">
+                                Remover fotografia atual
+                            </label>
+                        </div>
+                    }
 
                     <div class="d-flex gap-2">
 
@@ -168,8 +226,14 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
 
-            const fotoInput =
+            const fotoUrlInput =
                 document.getElementById("FotoPerfil");
+
+            const fotografiaInput =
+                document.getElementById("fotografia");
+
+            const removerFotoInput =
+                document.getElementById("removerFoto");
 
             const fotoPreview =
                 document.getElementById("foto-preview");
@@ -177,24 +241,80 @@
             const fotoInicial =
                 document.getElementById("foto-inicial");
 
-            fotoInput.addEventListener("input", function () {
+            let ficheiroPreviewUrl = null;
 
-                const url = fotoInput.value.trim();
-
-                if (url === "") {
-                    fotoPreview.style.display = "none";
-                    fotoInicial.style.display = "flex";
-                    return;
-                }
-
+            function mostrarImagem(url) {
                 fotoPreview.src = url;
                 fotoPreview.style.display = "block";
                 fotoInicial.style.display = "none";
-            });
+            }
 
-            fotoPreview.addEventListener("error", function () {
+            function mostrarInicial() {
                 fotoPreview.style.display = "none";
                 fotoInicial.style.display = "flex";
+            }
+
+            fotografiaInput.addEventListener("change", function () {
+
+                const ficheiro = fotografiaInput.files[0];
+
+                if (!ficheiro) {
+                    const url = fotoUrlInput.value.trim();
+
+                    if (url !== "") {
+                        mostrarImagem(url);
+                    }
+
+                    return;
+                }
+
+                if (ficheiroPreviewUrl !== null) {
+                    URL.revokeObjectURL(ficheiroPreviewUrl);
+                }
+
+                ficheiroPreviewUrl =
+                    URL.createObjectURL(ficheiro);
+
+                mostrarImagem(ficheiroPreviewUrl);
+
+                if (removerFotoInput) {
+                    removerFotoInput.checked = false;
+                }
+            });
+
+            fotoUrlInput.addEventListener("input", function () {
+
+                if (fotografiaInput.files.length > 0) {
+                    return;
+                }
+
+                const url = fotoUrlInput.value.trim();
+
+                if (url === "") {
+                    mostrarInicial();
+                }
+                else {
+                    mostrarImagem(url);
+                }
+
+                if (removerFotoInput) {
+                    removerFotoInput.checked = false;
+                }
+            });
+
+            if (removerFotoInput) {
+                removerFotoInput.addEventListener("change", function () {
+
+                    if (removerFotoInput.checked) {
+                        fotografiaInput.value = "";
+                        fotoUrlInput.value = "";
+                        mostrarInicial();
+                    }
+                });
+            }
+
+            fotoPreview.addEventListener("error", function () {
+                mostrarInicial();
             });
 
             fotoPreview.addEventListener("load", function () {

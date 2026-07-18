@@ -10,7 +10,6 @@
     var pesquisa = ViewData["Pesquisa"] as string;
     var categoriaId = ViewData["CategoriaId"] as int?;
     var tipo = ViewData["Tipo"] as string;
-    var apenasFuturos = ViewData["ApenasFuturos"] as bool? ?? false;
     var participo = ViewData["Participo"] as bool? ?? false;
     var ordem = ViewData["Ordem"] as string ?? "data";
 }
@@ -128,21 +127,6 @@
 
             <div class="col-12">
                 <div class="d-flex gap-4 flex-wrap">
-
-                    <div class="form-check">
-                        <input id="apenasFuturos"
-                               name="apenasFuturos"
-                               value="true"
-                               type="checkbox"
-                               class="form-check-input"
-                               checked="@apenasFuturos" />
-
-                        <label for="apenasFuturos"
-                               class="form-check-label">
-                            Apenas eventos futuros
-                        </label>
-                    </div>
-
                     <div class="form-check">
                         <input id="participo"
                                name="participo"
@@ -156,7 +140,6 @@
                             Eventos em que participo
                         </label>
                     </div>
-
                 </div>
             </div>
 

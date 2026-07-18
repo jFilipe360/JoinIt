@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using System.Reflection.Emit;
 
 namespace JoinIt.Data
 {
@@ -22,6 +23,8 @@ namespace JoinIt.Data
         public DbSet<Amizade> Amizades { get; set; }
 
         public DbSet<ConviteEvento> ConvitesEventos { get; set; }
+
+        public DbSet<Notificacao> Notificacoes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -90,6 +93,12 @@ namespace JoinIt.Data
                     c.UtilizadorId
                 })
                 .IsUnique();
+
+            builder.Entity<Notificacao>()
+            .HasOne(n => n.Utilizador)
+            .WithMany(u => u.Notificacoes)
+            .HasForeignKey(n => n.UtilizadorId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         }
     }

@@ -146,34 +146,76 @@
                     <div class="card shadow-sm h-100">
                         <div class="card-body">
 
-                            <h3 class="h5 mb-1">
-                                @utilizador.Nome
-                            </h3>
+                            <div class="d-flex gap-3 align-items-center">
 
-                            <p class="text-muted mb-3">
-                                @utilizador.UserName
-                            </p>
+                                <div class="flex-shrink-0">
 
-                            <a asp-controller="Perfis"
-                               asp-action="Details"
-                               asp-route-id="@utilizador.Id"
-                               class="btn btn-primary btn-sm">
-                                Ver perfil
-                            </a>
+                                    @if (!string.IsNullOrWhiteSpace(utilizador.FotoPerfil))
+                                    {
+                                        <img src="@utilizador.FotoPerfil"
+                                             alt="Fotografia de @utilizador.Nome"
+                                             class="rounded-circle border"
+                                             style="width: 90px;
+                                                height: 90px;
+                                                object-fit: cover;" />
+                                    }
+                                    else
+                                    {
+                                        var inicial = !string.IsNullOrWhiteSpace(utilizador.Nome)
+                                        ? utilizador.Nome.Substring(0, 1).ToUpper()
+                                        : "?";
 
-                            <form asp-action="RemoverAmigo"
-                                  asp-route-id="@amizade.Id"
-                                  method="post"
-                                  onsubmit="return confirm('Tens a certeza de que queres remover este amigo?');">
+                                        <div class="rounded-circle bg-dark text-warning
+                                                d-flex justify-content-center
+                                                align-items-center"
+                                             style="width: 90px;
+                                                height: 90px;
+                                                font-size: 2rem;
+                                                font-weight: 600;">
+                                            @inicial
+                                        </div>
+                                    }
 
-                                @Html.AntiForgeryToken()
+                                </div>
 
-                                <button type="submit"
-                                        class="btn btn-outline-danger btn-sm">
-                                    Remover amigo
-                                </button>
+                                <div class="flex-grow-1">
 
-                            </form>
+                                    <h3 class="h5 mb-1">
+                                        @utilizador.Nome
+                                    </h3>
+
+                                    <p class="text-muted mb-3">
+                                        @utilizador.UserName
+                                    </p>
+
+                                    <div class="d-flex gap-2 flex-wrap">
+
+                                        <a asp-controller="Perfis"
+                                           asp-action="Details"
+                                           asp-route-id="@utilizador.Id"
+                                           class="btn btn-primary btn-sm">
+                                            Ver perfil
+                                        </a>
+
+                                        <form asp-action="RemoverAmigo"
+                                              asp-route-id="@amizade.Id"
+                                              method="post"
+                                              onsubmit="return confirm('Tens a certeza de que queres remover este amigo?');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                Remover amigo
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
 
                         </div>
                     </div>
