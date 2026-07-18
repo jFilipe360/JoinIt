@@ -1,28 +1,8 @@
-﻿@using Microsoft.EntityFrameworkCore
-@using Microsoft.AspNetCore.Identity
-@using JoinIt.Data
+﻿@using Microsoft.AspNetCore.Identity
 @using JoinIt.Models
 
-@inject ApplicationDbContext DbContext
 @inject UserManager<ApplicationUser> UserManager
 
-@{
-    var numeroNotificacoes = 0;
-
-    if (User.Identity?.IsAuthenticated == true)
-    {
-        var utilizadorId = UserManager.GetUserId(User);
-
-        if (!string.IsNullOrEmpty(utilizadorId))
-        {
-            numeroNotificacoes = await DbContext.Notificacoes
-                .AsNoTracking()
-                .CountAsync(n =>
-                    n.UtilizadorId == utilizadorId &&
-                    !n.Lida);
-        }
-    }
-}
 
 <!DOCTYPE html>
 <html lang="pt">
@@ -33,6 +13,7 @@
     <title>@ViewData["Title"] - JoinIt</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/joinit.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
@@ -75,9 +56,6 @@
 
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Perfis" asp-action="MeuPerfil">Meu perfil</a>
-                            </li>
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Perfis" asp-action="Index">Utilizadores</a>
@@ -85,16 +63,6 @@
 
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Convites" asp-action="Index">Convites</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Notificacoes" asp-action="Index">
-                                    Notificações
-
-                                    @if (numeroNotificacoes > 0)
-                                    {
-                                        <span class="badge bg-danger ms-1">@numeroNotificacoes</span>
-                                    }
-                                </a>
                             </li>
                         }
 
@@ -108,10 +76,6 @@
                                 </a>
                             </li>
                         }
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">Sobre</a>
-                        </li>
                     </ul>
 
                     <partial name="_LoginPartial" />
@@ -129,13 +93,13 @@
     </main>
 
     <footer>
-
         <div class="container">
-
-            © 2026 JoinIt • Desenvolvimento Web • LEI
-
+            <a asp-controller="Home"
+               asp-action="Privacy"
+               class="text-reset text-decoration-none">
+                © 2026 JoinIt • Desenvolvimento Web • LEI • Sobre
+            </a>
         </div>
-
     </footer>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

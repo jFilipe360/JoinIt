@@ -1,6 +1,9 @@
+using JoinIt.Data;
+using JoinIt.Enums;
 using JoinIt.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
 namespace JoinIt.Controllers
@@ -8,15 +11,31 @@ namespace JoinIt.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger,ApplicationDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var agora = DateTime.Now;
+
+            var proximosEventos = await _context.Eventos
+                .AsNoTracking()
+                .Include(e => e.Categoria)
+                .Include(e => e.Participantes)
+                .Where(e =>
+                    !e.IsPrivado &&
+                    e.Estado != EstadoEvento.Cancelado &&
+                    e.DataHora >= agora)
+                .OrderBy(e => e.DataHora)
+                .Take(3)
+                .ToListAsync();
+
+            return View(proximosEventos);
         }
 
         public IActionResult Privacy()
